@@ -17,8 +17,6 @@ using Phantom.Messaging.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddPhantomCQRS(typeof(Program).Assembly);
@@ -57,15 +55,29 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UsePhantom();
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+app.MapGet("/", () => """
+    <html><body style='font-family:Segoe UI,sans-serif;padding:40px;max-width:800px;margin:auto'>
+    <h1>🛒 ECommerce Sample — Phantom Framework</h1>
+    <h2>API Endpoints</h2>
+    <table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse'>
+    <tr style='background:#f0f0f0'><th>Method</th><th>URL</th><th>Body</th></tr>
+    <tr><td>POST</td><td>/api/customers</td><td>{"firstName":"Ali","lastName":"Mohammadi","email":"ali@test.com"}</td></tr>
+    <tr><td>GET</td><td>/api/customers/{id}</td><td>—</td></tr>
+    <tr><td>POST</td><td>/api/products</td><td>{"name":"Laptop","description":"Gaming","price":25000000,"currency":"IRR","stockQuantity":10}</td></tr>
+    <tr><td>GET</td><td>/api/products/{id}</td><td>—</td></tr>
+    <tr><td>POST</td><td>/api/orders</td><td>{"customerId":"...","shippingAddress":"Tehran","lines":[{"productId":"...","productName":"Laptop","quantity":1,"unitPrice":25000000,"currency":"IRR"}]}</td></tr>
+    <tr><td>GET</td><td>/api/orders/{id}</td><td>—</td></tr>
+    <tr><td>POST</td><td>/api/orders/{id}/ship</td><td>{"trackingNumber":"TRK-123"}</td></tr>
+    <tr><td>POST</td><td>/api/orders/{id}/cancel</td><td>—</td></tr>
+    <tr><td>GET</td><td>/health</td><td>—</td></tr>
+    </table>
+    <p style='color:#666;margin-top:20px'>Use Postman, cURL, or VS Code REST Client to test these endpoints.</p>
+    </body></html>
+    """);
 
 app.Run();
 
