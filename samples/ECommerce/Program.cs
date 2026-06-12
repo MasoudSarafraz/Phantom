@@ -17,7 +17,8 @@ using Phantom.Messaging.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddPhantomCQRS(typeof(Program).Assembly);
@@ -55,6 +56,12 @@ builder.Services.AddHealthChecks()
     .AddPhantomBrokerHealthCheck("orders");
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UsePhantom();
 app.MapControllers();
