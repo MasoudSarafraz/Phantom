@@ -3,6 +3,7 @@
 public abstract class Entity<TId>
 {
     public TId Id { get; protected set; } = default!;
+    public int Version { get; protected set; }
 
     protected Entity() { }
 
