@@ -12,8 +12,12 @@ public class InMemoryChannelAdapter : IChannelAdapter
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<InMemoryChannelAdapter> _logger;
     private readonly ConcurrentDictionary<Type, List<Subscription>> _subscriptions = new();
+    private volatile bool _isStarted;
 
     public string ChannelName { get; }
+
+    /// <inheritdoc />
+    public bool IsStarted => _isStarted;
 
     public InMemoryChannelAdapter(string channelName, IServiceProvider serviceProvider, ILogger<InMemoryChannelAdapter> logger)
     { ChannelName = channelName; _serviceProvider = serviceProvider; _logger = logger; }
@@ -37,8 +41,17 @@ public class InMemoryChannelAdapter : IChannelAdapter
         lock (subscriptions) { subscriptions.Add(new Subscription(typeof(THandler))); }
     }
 
-    public Task StartAsync(CancellationToken ct = default) => Task.CompletedTask;
-    public Task StopAsync(CancellationToken ct = default) => Task.CompletedTask;
+    public Task StartAsync(CancellationToken ct = default)
+    {
+        _isStarted = true;
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken ct = default)
+    {
+        _isStarted = false;
+        return Task.CompletedTask;
+    }
 
     private record Subscription(Type HandlerType);
 }

@@ -19,18 +19,45 @@ public class RabbitMqChannelAdapter : IChannelAdapter, IDisposable, IAsyncDispos
     private IConnection? _connection;
     private IModel? _channel;
     private readonly object _connectionLock = new();
+    private bool _isStarted;
 
     public string ChannelName { get; }
+
+    /// <inheritdoc />
+    public bool IsStarted
+    {
+        get
+        {
+            lock (_connectionLock)
+            {
+                return _isStarted && _connection != null && _connection.IsOpen && _channel != null && _channel.IsOpen;
+            }
+        }
+    }
 
     public RabbitMqChannelAdapter(string channelName, RabbitMqOptions options, IMessageSerializer serializer, IServiceProvider serviceProvider, ILogger<RabbitMqChannelAdapter> logger)
     { ChannelName = channelName; _options = options; _serializer = serializer; _serviceProvider = serviceProvider; _logger = logger; }
 
-    public Task StartAsync(CancellationToken ct = default) { EnsureConnection(); _logger.LogInformation("[Phantom] RabbitMQ channel '{Channel}' started", ChannelName); return Task.CompletedTask; }
+    public Task StartAsync(CancellationToken ct = default)
+    {
+        EnsureConnection();
+        _isStarted = true;
+        _logger.LogInformation("[Phantom] RabbitMQ channel '{Channel}' started", ChannelName);
+        return Task.CompletedTask;
+    }
 
     public Task StopAsync(CancellationToken ct = default)
     {
-        _channel?.Close(); _channel?.Dispose(); _connection?.Close(); _connection?.Dispose();
-        _channel = null; _connection = null;
+        lock (_connectionLock)
+        {
+            _channel?.Close();
+            _channel?.Dispose();
+            _connection?.Close();
+            _connection?.Dispose();
+            _channel = null;
+            _connection = null;
+            _isStarted = false;
+        }
         return Task.CompletedTask;
     }
 

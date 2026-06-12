@@ -4,40 +4,88 @@ using System.Collections.Concurrent;
 
 namespace Phantom.Messaging.Abstractions;
 
+/// <summary>
+/// Thread-safe implementation of <see cref="IChannelRegistry"/> that manages channel adapters
+/// and event-to-channel routing mappings.
+/// </summary>
 public class ChannelRegistry : IChannelRegistry
 {
     private readonly ConcurrentDictionary<string, List<IChannelAdapter>> _channels = new();
     private readonly ConcurrentDictionary<Type, List<string>> _eventChannelMap = new();
     private readonly ILogger<ChannelRegistry> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChannelRegistry"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance for diagnostic output.</param>
     public ChannelRegistry(ILogger<ChannelRegistry> logger) { _logger = logger; }
 
+    /// <inheritdoc />
     public void Register(string channelName, IChannelAdapter adapter)
     {
+        if (string.IsNullOrWhiteSpace(channelName))
+            throw new ArgumentException("Channel name must not be empty or whitespace.", nameof(channelName));
+
+        if (adapter is null)
+            throw new ArgumentNullException(nameof(adapter));
+
         var adapters = _channels.GetOrAdd(channelName, _ => new List<IChannelAdapter>());
         lock (adapters) { adapters.Add(adapter); }
         _logger.LogInformation("[Phantom] Registered channel '{ChannelName}' with adapter '{AdapterType}'", channelName, adapter.GetType().Name);
     }
 
+    /// <inheritdoc />
     public IReadOnlyList<IChannelAdapter> GetChannels(string channelName) =>
         _channels.TryGetValue(channelName, out var adapters) ? adapters.AsReadOnly() : Array.Empty<IChannelAdapter>();
 
+    /// <inheritdoc />
     public IReadOnlyList<IChannelAdapter> GetChannelsForEvent<TEvent>() where TEvent : IIntegrationEvent
     {
         if (!_eventChannelMap.TryGetValue(typeof(TEvent), out var channelNames))
-            return _channels.Values.SelectMany(c => c).ToList().AsReadOnly();
+        {
+            _logger.LogWarning("[Phantom] No channel mapping found for event '{EventType}'; returning empty list", typeof(TEvent).Name);
+            return Array.Empty<IChannelAdapter>();
+        }
         return channelNames.SelectMany(name => GetChannels(name)).ToList().AsReadOnly();
     }
 
+    /// <inheritdoc />
     public void MapEventToChannel<TEvent>(string channelName) where TEvent : IIntegrationEvent
     {
-        var channels = _eventChannelMap.GetOrAdd(typeof(TEvent), _ => new List<string>());
-        lock (channels) { if (!channels.Contains(channelName)) channels.Add(channelName); }
-        _logger.LogInformation("[Phantom] Mapped event '{EventType}' to channel '{ChannelName}'", typeof(TEvent).Name, channelName);
+        MapEventToChannel(typeof(TEvent), channelName);
     }
 
+    /// <inheritdoc />
+    public void MapEventToChannel(Type eventType, string channelName)
+    {
+        if (eventType is null)
+            throw new ArgumentNullException(nameof(eventType));
+
+        if (string.IsNullOrWhiteSpace(channelName))
+            throw new ArgumentException("Channel name must not be empty or whitespace.", nameof(channelName));
+
+        var channels = _eventChannelMap.GetOrAdd(eventType, _ => new List<string>());
+        lock (channels) { if (!channels.Contains(channelName)) channels.Add(channelName); }
+        _logger.LogInformation("[Phantom] Mapped event '{EventType}' to channel '{ChannelName}'", eventType.Name, channelName);
+    }
+
+    /// <inheritdoc />
     public void MapEventToChannels<TEvent>(params string[] channelNames) where TEvent : IIntegrationEvent
     {
         foreach (var channelName in channelNames) MapEventToChannel<TEvent>(channelName);
     }
+
+    /// <summary>
+    /// Gets the names of all registered channels.
+    /// </summary>
+    /// <returns>A read-only collection of channel names.</returns>
+    public IReadOnlyCollection<string> GetAllChannelNames() =>
+        _channels.Keys.ToList().AsReadOnly();
+
+    /// <summary>
+    /// Gets all registered channel adapters across all channels.
+    /// </summary>
+    /// <returns>A read-only list of all registered channel adapters.</returns>
+    public IReadOnlyList<IChannelAdapter> GetAllAdapters() =>
+        _channels.Values.SelectMany(a => a).ToList().AsReadOnly();
 }
