@@ -14,7 +14,7 @@ public class OutboxMessage
     /// <summary>
     /// Gets or sets the unique identifier for this outbox message.
     /// </summary>
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
     /// Gets or sets the assembly-qualified name of the event type, used for runtime type resolution during deserialization.

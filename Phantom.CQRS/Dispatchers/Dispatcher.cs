@@ -100,8 +100,13 @@ public class Dispatcher : IDispatcher
             var current = currentDelegate;
             currentDelegate = () =>
             {
-                var requestHandlerDelegate = new RequestHandlerDelegate(() => current());
-                return (Task<TResult>)pipelineHandleMethod.Invoke(behavior, new object[] { command, requestHandlerDelegate, cancellationToken })!;
+                var resultHolder = new TResult[1];
+                var requestHandlerDelegate = new RequestHandlerDelegate(async () =>
+                {
+                    resultHolder[0] = await current();
+                });
+                var pipelineTask = (Task)pipelineHandleMethod.Invoke(behavior, new object[] { command, requestHandlerDelegate, cancellationToken })!;
+                return AwaitPipelineAndGetResult(pipelineTask, resultHolder);
             };
         }
 
@@ -143,11 +148,27 @@ public class Dispatcher : IDispatcher
             var current = currentDelegate;
             currentDelegate = () =>
             {
-                var requestHandlerDelegate = new RequestHandlerDelegate(() => current());
-                return (Task<TResult>)pipelineHandleMethod.Invoke(behavior, new object[] { query, requestHandlerDelegate, cancellationToken })!;
+                var resultHolder = new TResult[1];
+                var requestHandlerDelegate = new RequestHandlerDelegate(async () =>
+                {
+                    resultHolder[0] = await current();
+                });
+                var pipelineTask = (Task)pipelineHandleMethod.Invoke(behavior, new object[] { query, requestHandlerDelegate, cancellationToken })!;
+                return AwaitPipelineAndGetResult(pipelineTask, resultHolder);
             };
         }
 
         return await currentDelegate();
+    }
+
+    /// <summary>
+    /// Awaits the pipeline behavior's Task and returns the captured result from the handler.
+    /// This bridges the gap between <see cref="IPipelineBehavior{TRequest}"/> (which returns <see cref="Task"/>)
+    /// and handlers that return <c>Task{TResult}</c>.
+    /// </summary>
+    private static async Task<TResult> AwaitPipelineAndGetResult<TResult>(Task pipelineTask, TResult[] resultHolder)
+    {
+        await pipelineTask;
+        return resultHolder[0];
     }
 }
