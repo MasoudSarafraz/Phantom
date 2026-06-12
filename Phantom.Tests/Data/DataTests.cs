@@ -14,7 +14,6 @@ using System.Linq.Expressions;
 
 namespace Phantom.Tests.Data;
 
-// ─── Test Entities ──────────────────────────────────────────────
 
 public class TestProduct : Entity<Guid>
 {
@@ -66,7 +65,6 @@ public class TestFullEntity : AuditableSoftDeleteEntity<Guid>
     public TestFullEntity() { }
 }
 
-// ─── Test Specifications ────────────────────────────────────────
 
 public class ExpensiveProductSpec : Specification<TestProduct>
 {
@@ -79,7 +77,6 @@ public class ExpensiveProductSpec : Specification<TestProduct>
     public override Expression<Func<TestProduct, bool>> ToExpression() => p => p.Price >= _minPrice;
 }
 
-// ─── Test DbContext ─────────────────────────────────────────────
 
 public class TestDbContext : PhantomDbContext
 {
@@ -124,7 +121,6 @@ public class TestDbContext : PhantomDbContext
     }
 }
 
-// ─── Repository Tests ───────────────────────────────────────────
 
 public class RepositoryTests
 {
@@ -278,7 +274,6 @@ public class RepositoryTests
     }
 }
 
-// ─── UnitOfWork Tests ───────────────────────────────────────────
 
 public class UnitOfWorkTests
 {
@@ -315,14 +310,12 @@ public class UnitOfWorkTests
 
         var uow = sp.GetRequiredService<IUnitOfWork>();
 
-        // InMemory provider doesn't support transactions, but the method should not throw
         try
         {
             await uow.BeginTransactionAsync();
         }
         catch (InvalidOperationException)
         {
-            // Expected for InMemory provider
         }
     }
 
@@ -333,7 +326,6 @@ public class UnitOfWorkTests
     }
 }
 
-// ─── PhantomDbContext Domain Event Tests ────────────────────────
 
 public class TestDomainEventDispatcher : IDomainEventDispatcher
 {
@@ -383,7 +375,6 @@ public class PhantomDbContextTests
         aggregate.AddTestEvent("event1");
         aggregate.AddTestEvent("event2");
 
-        // Need to add to context as an entity
         context.Set<TestAggregateWithEvents>().Add(aggregate);
         await context.SaveChangesAsync();
 
@@ -411,7 +402,6 @@ public class PhantomDbContextTests
     [Fact]
     public async Task Failed_Handler_Should_Not_Lose_Other_Events()
     {
-        // Test that per-event error handling continues dispatching remaining events
         var dispatcher = new ThrowingDomainEventDispatcher(failOnNth: 1);
         var options = new DbContextOptionsBuilder<TestDbContext>()
             .UseInMemoryDatabase("FailedEventTest_" + Guid.NewGuid())
@@ -419,13 +409,12 @@ public class PhantomDbContextTests
 
         using var context = new TestDbContext(options, dispatcher);
         var aggregate = new TestAggregateWithEvents(Guid.NewGuid());
-        aggregate.AddTestEvent("event1"); // this will fail
-        aggregate.AddTestEvent("event2"); // this should still be attempted
+        aggregate.AddTestEvent("event1");
+        aggregate.AddTestEvent("event2");
 
         context.Set<TestAggregateWithEvents>().Add(aggregate);
         await context.SaveChangesAsync();
 
-        // Events should still be cleared even if some handlers failed
         Assert.Empty(aggregate.DomainEvents);
     }
 }
@@ -453,7 +442,6 @@ public class ThrowingDomainEventDispatcher : IDomainEventDispatcher
     }
 }
 
-// ─── EfOutboxRepository Tests ──────────────────────────────────
 
 public class EfOutboxRepositoryTests
 {
@@ -535,7 +523,6 @@ public class EfOutboxRepositoryTests
         await repo.MarkAsFailedAsync(msg.Id, "Connection timeout");
         await dbContext.SaveChangesAsync();
 
-        // Message should still be pending (not published)
         var pending = await repo.GetPendingAsync(10);
         Assert.Single(pending);
         Assert.Equal("Connection timeout", pending[0].LastError);
@@ -568,7 +555,6 @@ public class EfOutboxRepositoryTests
     }
 }
 
-// ─── Specification Evaluator Tests ──────────────────────────────
 
 public class SpecificationEvaluatorTests
 {
@@ -585,7 +571,6 @@ public class SpecificationEvaluatorTests
         using var context = new TestDbContext(options);
         var query = evaluator.ApplySpecification(context.Products, spec);
 
-        // Should be able to enumerate without error
         var results = query.ToList();
         Assert.NotNull(results);
     }

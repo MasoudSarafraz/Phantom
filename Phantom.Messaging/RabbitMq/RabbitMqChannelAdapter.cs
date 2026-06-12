@@ -23,7 +23,6 @@ public class RabbitMqChannelAdapter : IChannelAdapter, IDisposable, IAsyncDispos
 
     public string ChannelName { get; }
 
-    /// <inheritdoc />
     public bool IsStarted
     {
         get

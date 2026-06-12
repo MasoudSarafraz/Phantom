@@ -8,7 +8,6 @@ using FluentValidation;
 
 namespace Phantom.Tests.CQRS;
 
-// ─── Test Commands/Queries ──────────────────────────────────────
 
 public record CreateOrderCommand(string ProductName, int Quantity) : ICommand;
 
@@ -16,7 +15,6 @@ public record CreateOrderResult(Guid OrderId) : ICommand<Guid>;
 
 public record GetOrderQuery(Guid OrderId) : IQuery<string>;
 
-// ─── Test Handlers ──────────────────────────────────────────────
 
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand>
 {
@@ -44,7 +42,6 @@ public class GetOrderHandler : IQueryHandler<GetOrderQuery, string>
     }
 }
 
-// ─── Dispatcher Tests ───────────────────────────────────────────
 
 public class DispatcherTests
 {
@@ -99,13 +96,11 @@ public class DispatcherTests
         var sp = services.BuildServiceProvider();
         var dispatcher = sp.GetRequiredService<IDispatcher>();
 
-        // ICommand with no registered handler
         await Assert.ThrowsAsync<Phantom.CQRS.Exceptions.HandlerNotFoundException>(() =>
             dispatcher.SendAsync(new CreateOrderCommand("test", 1)));
     }
 }
 
-// ─── Pipeline Behavior Tests ────────────────────────────────────
 
 public class TestLoggingPipeline : IPipelineBehavior<CreateOrderCommand>
 {
@@ -136,7 +131,6 @@ public class PipelineBehaviorTests
     }
 }
 
-// ─── Validation Pipeline Tests ──────────────────────────────────
 
 public record ValidatedCommand(string Name, int Age) : ICommand;
 
@@ -168,7 +162,6 @@ public class ValidationPipelineTests
         var sp = services.BuildServiceProvider();
         var dispatcher = sp.GetRequiredService<IDispatcher>();
 
-        // Should not throw
         await dispatcher.SendAsync(new ValidatedCommand("John", 25));
     }
 
@@ -188,7 +181,6 @@ public class ValidationPipelineTests
     }
 }
 
-// ─── Multi-Assembly Tests ───────────────────────────────────────
 
 public class MultiAssemblyTests
 {
@@ -198,7 +190,6 @@ public class MultiAssemblyTests
         var services = new ServiceCollection();
         services.AddLogging();
 
-        // Should not throw with multiple assemblies
         services.AddPhantomCQRS(
             typeof(CreateOrderHandler).Assembly,
             typeof(ValidatedCommandHandler).Assembly

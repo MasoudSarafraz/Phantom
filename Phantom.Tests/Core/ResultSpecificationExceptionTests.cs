@@ -6,7 +6,6 @@ using System.Linq.Expressions;
 
 namespace Phantom.Tests.Core;
 
-// ─── Result Tests ──────────────────────────────────────────────
 
 public class ResultTests
 {
@@ -55,7 +54,6 @@ public class ResultTests
     }
 }
 
-// ─── Result<T> Tests ────────────────────────────────────────────
 
 public class ResultTTests
 {
@@ -161,7 +159,6 @@ public class ResultTTests
     }
 }
 
-// ─── Specification Tests ────────────────────────────────────────
 
 public class ActiveUserSpec : Specification<string>
 {
@@ -279,7 +276,6 @@ public class SpecificationTests
     }
 }
 
-// ─── Exception Tests ────────────────────────────────────────────
 
 public class ExceptionTests
 {
@@ -327,7 +323,6 @@ public class ExceptionTests
     }
 }
 
-// ─── Event Tests ────────────────────────────────────────────────
 
 public class TestIntegrationEvent : IntegrationEvent
 {

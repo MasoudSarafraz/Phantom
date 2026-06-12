@@ -11,20 +11,8 @@ using System.Reflection;
 
 namespace Phantom.Messaging.Extensions;
 
-/// <summary>
-/// Extension methods for registering the Phantom messaging system with the dependency injection container.
-/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// Adds the Phantom messaging system to the service collection, including channel adapters,
-    /// event routing, handler registration, and optional outbox processing.
-    /// </summary>
-    /// <param name="services">The service collection to register services with.</param>
-    /// <param name="assemblies">One or more assemblies to scan for <see cref="IIntegrationEventHandler{T}"/> implementations.</param>
-    /// <param name="configure">An optional action to configure the messaging options.</param>
-    /// <returns>The service collection for fluent chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="assemblies"/> is null.</exception>
     public static IServiceCollection AddPhantomMessaging(
         this IServiceCollection services,
         params Assembly[] assemblies)
@@ -32,15 +20,6 @@ public static class ServiceCollectionExtensions
         return AddPhantomMessaging(services, assemblies, configure: null);
     }
 
-    /// <summary>
-    /// Adds the Phantom messaging system to the service collection, including channel adapters,
-    /// event routing, handler registration, and optional outbox processing.
-    /// </summary>
-    /// <param name="services">The service collection to register services with.</param>
-    /// <param name="assemblies">One or more assemblies to scan for <see cref="IIntegrationEventHandler{T}"/> implementations.</param>
-    /// <param name="configure">An optional action to configure the messaging options.</param>
-    /// <returns>The service collection for fluent chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> or <paramref name="assemblies"/> is null.</exception>
     public static IServiceCollection AddPhantomMessaging(
         this IServiceCollection services,
         Assembly[] assemblies,
@@ -53,20 +32,16 @@ public static class ServiceCollectionExtensions
         if (!options.ChannelBuilders.Any()) options.AddChannel("default", c => c.UseInMemory());
         configure?.Invoke(options);
 
-        // Register the message serializer
         services.AddSingleton<IMessageSerializer, JsonMessageSerializer>();
 
-        // Register the channel registry (single registration, no duplicates)
         services.AddSingleton<IChannelRegistry, ChannelRegistry>();
 
-        // Register the event publisher with the ThrowIfNoChannelFound option
         services.AddScoped<IEventPublisher>(sp =>
             new EventPublisher(
                 sp.GetRequiredService<IChannelRegistry>(),
                 sp.GetRequiredService<ILogger<EventPublisher>>(),
                 options.ThrowIfNoChannelFound));
 
-        // Build and register channel adapters, and set up event-to-channel mappings
         services.AddSingleton(sp =>
         {
             var registry = (ChannelRegistry)sp.GetRequiredService<IChannelRegistry>();
@@ -84,7 +59,6 @@ public static class ServiceCollectionExtensions
                 registry.Register(name, adapter);
             }
 
-            // Map events to channels using the non-generic overload (no reflection needed)
             foreach (var (eventType, channels) in options.EventChannelMappings)
             {
                 foreach (var channel in channels)
@@ -96,7 +70,6 @@ public static class ServiceCollectionExtensions
             return registry;
         });
 
-        // Register event handlers from the provided assemblies
         foreach (var assembly in assemblies)
         {
             var handlerTypes = assembly.GetTypes()
@@ -113,7 +86,6 @@ public static class ServiceCollectionExtensions
             }
         }
 
-        // Register resilience policies if configured
         if (options.Retry is not null)
         {
             services.AddSingleton(sp =>
@@ -132,14 +104,10 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<ILogger<CircuitBreakerPolicy>>()));
         }
 
-        // Register the hosted service that starts/stops all channel adapters
         services.AddHostedService<ChannelAdapterHostedService>();
 
-        // Register outbox processing if enabled
         if (options.UseOutbox)
         {
-            // IOutboxMessageRepository must be provided by the application or a persistence package.
-            // If not already registered, add a placeholder that throws a clear error message at resolution time.
             var outboxRepoRegistered = services.Any(sd => sd.ServiceType == typeof(IOutboxMessageRepository));
             if (!outboxRepoRegistered)
             {

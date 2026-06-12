@@ -12,18 +12,8 @@ using Phantom.Messaging.Outbox;
 
 namespace Phantom.Data.Extensions;
 
-/// <summary>
-/// Extension methods for registering Phantom.Data services with the DI container.
-/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registers all Phantom.Data services, including the DbContext, interceptors,
-    /// repositories, and the domain event dispatcher.
-    /// </summary>
-    /// <param name="services">The service collection to register services with.</param>
-    /// <param name="configure">An action to configure <see cref="PhantomDataOptions"/>.</param>
-    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddPhantomData(this IServiceCollection services, Action<PhantomDataOptions> configure)
     {
         var options = new PhantomDataOptions();
@@ -88,20 +78,13 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOutboxMessageRepository, EfOutboxRepository>();
         }
 
-        // Use TryAddScoped so this doesn't override a user-registered ICurrentUserService
         services.TryAddScoped<ICurrentUserService, DefaultCurrentUserService>();
 
         return services;
     }
 }
 
-/// <summary>
-/// Default implementation of <see cref="ICurrentUserService"/> that returns <c>null</c>.
-/// Can be overridden by registering your own <see cref="ICurrentUserService"/> implementation
-/// before calling <see cref="ServiceCollectionExtensions.AddPhantomData"/>.
-/// </summary>
 internal class DefaultCurrentUserService : ICurrentUserService
 {
-    /// <inheritdoc/>
     public string? GetCurrentUserId() => null;
 }

@@ -7,12 +7,6 @@ using Phantom.Messaging.Outbox;
 
 namespace Phantom.Messaging.Outbox;
 
-/// <summary>
-/// Background service that periodically processes pending outbox messages,
-/// attempting to publish them to their target channels.
-/// Uses <see cref="IMessageSerializer"/> for consistent deserialization and
-/// supports runtime type resolution with loaded assembly fallback.
-/// </summary>
 public class OutboxProcessor : BackgroundService, IOutboxProcessor
 {
     private readonly IServiceProvider _serviceProvider;
@@ -21,15 +15,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
     private readonly TimeSpan _pollingInterval;
     private readonly int _batchSize;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="OutboxProcessor"/> class.
-    /// </summary>
-    /// <param name="serviceProvider">The service provider for resolving scoped dependencies.</param>
-    /// <param name="serializer">The message serializer for deserializing event payloads.</param>
-    /// <param name="logger">The logger instance for diagnostic output.</param>
-    /// <param name="batchSize">The maximum number of messages to process per polling cycle.</param>
-    /// <param name="pollingInterval">The interval between polling cycles.</param>
-    /// <exception cref="ArgumentNullException">Thrown when any required argument is null.</exception>
     public OutboxProcessor(
         IServiceProvider serviceProvider,
         IMessageSerializer serializer,
@@ -44,7 +29,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
         _pollingInterval = pollingInterval ?? TimeSpan.FromSeconds(5);
     }
 
-    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("[Phantom] Outbox Processor started (batch size: {BatchSize}, polling interval: {PollingInterval}s)",
@@ -67,14 +51,12 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
             }
             catch (OperationCanceledException)
             {
-                // Expected during shutdown, no need to log
             }
         }
 
         _logger.LogInformation("[Phantom] Outbox Processor stopped");
     }
 
-    /// <inheritdoc />
     public async Task ProcessAsync(CancellationToken ct = default)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -91,10 +73,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
         }
     }
 
-    /// <summary>
-    /// Processes a single outbox message, attempting to deserialize and publish it.
-    /// On failure, increments the retry count and records the error.
-    /// </summary>
     private async Task ProcessMessageAsync(
         OutboxMessage message,
         IOutboxMessageRepository repository,
@@ -103,7 +81,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
     {
         try
         {
-            // Resolve the event type from the stored assembly-qualified name
             var eventType = ResolveEventType(message.EventType);
             if (eventType is null)
             {
@@ -111,7 +88,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
                 return;
             }
 
-            // Deserialize using the injected IMessageSerializer for consistency
             var data = System.Text.Encoding.UTF8.GetBytes(message.Payload);
             var @event = _serializer.Deserialize(data, eventType) as IIntegrationEvent;
             if (@event is null)
@@ -120,7 +96,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
                 return;
             }
 
-            // Publish to the specified channel or all mapped channels
             if (message.Channel != OutboxMessage.DefaultChannel)
             {
                 await publisher.PublishAsync(@event, message.Channel, ct);
@@ -136,7 +111,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
         {
             _logger.LogError(ex, "[Phantom] Failed to publish outbox message {MessageId}", message.Id);
 
-            // Increment retry count and record the error
             try
             {
                 await repository.IncrementRetryCountAsync(message.Id, ex.Message, ct);
@@ -148,21 +122,13 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
         }
     }
 
-    /// <summary>
-    /// Resolves a type from its assembly-qualified name, with a fallback that scans
-    /// all loaded assemblies if the standard <see cref="Type.GetType"/> method fails.
-    /// </summary>
-    /// <param name="typeName">The assembly-qualified type name to resolve.</param>
-    /// <returns>The resolved type, or null if the type cannot be found.</returns>
     private static Type? ResolveEventType(string typeName)
     {
         if (string.IsNullOrWhiteSpace(typeName)) return null;
 
-        // First attempt: standard Type.GetType with assembly-qualified name
         var eventType = Type.GetType(typeName);
         if (eventType is not null) return eventType;
 
-        // Fallback: scan loaded assemblies for the type
         var typeNameWithoutAssembly = typeName.Split(',')[0].Trim();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -173,7 +139,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
             }
             catch
             {
-                // Skip assemblies that throw during type resolution
             }
         }
 

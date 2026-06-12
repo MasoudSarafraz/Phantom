@@ -24,7 +24,6 @@ using System.Text.Json;
 
 namespace Phantom.Tests.AspNetCore;
 
-// ─── ExceptionHandlingMiddleware Tests ───────────────────────────
 
 public class ExceptionHandlingMiddlewareTests
 {
@@ -203,7 +202,6 @@ public class ExceptionHandlingMiddlewareTests
     }
 }
 
-// ─── PhantomProblemDetail Tests ─────────────────────────────────
 
 public class PhantomProblemDetailTests
 {
@@ -249,7 +247,6 @@ public class PhantomProblemDetailTests
     }
 }
 
-// ─── DatabaseHealthCheck Tests ──────────────────────────────────
 
 public class AspNetTestDbContext : PhantomDbContext
 {
@@ -277,7 +274,6 @@ public class DatabaseHealthCheckTests
     }
 }
 
-// ─── BrokerHealthCheck Tests ────────────────────────────────────
 
 public class BrokerHealthCheckTests
 {
@@ -322,7 +318,6 @@ public class BrokerHealthCheckTests
     {
         var registry = new ChannelRegistry(new LoggerFactory().CreateLogger<ChannelRegistry>());
         var adapter = new TestHealthChannelAdapter("test-ch");
-        // Not started!
         registry.Register("test-ch", adapter);
 
         var services = new ServiceCollection();
@@ -338,7 +333,6 @@ public class BrokerHealthCheckTests
     }
 }
 
-// ─── Helper ─────────────────────────────────────────────────────
 
 internal class TestHealthChannelAdapter : IChannelAdapter
 {
@@ -356,5 +350,3 @@ internal class TestHealthChannelAdapter : IChannelAdapter
     public Task StartAsync(CancellationToken ct = default) { _isStarted = true; return Task.CompletedTask; }
     public Task StopAsync(CancellationToken ct = default) { _isStarted = false; return Task.CompletedTask; }
 }
-
-

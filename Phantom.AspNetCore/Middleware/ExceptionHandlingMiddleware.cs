@@ -8,10 +8,6 @@ using FluentValidation;
 
 namespace Phantom.AspNetCore.Middleware;
 
-/// <summary>
-/// Global exception handling middleware that converts unhandled exceptions into
-/// RFC 7807 Problem Detail responses.
-/// </summary>
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -20,22 +16,12 @@ public class ExceptionHandlingMiddleware
     private static readonly JsonSerializerOptions JsonSerializerOptions =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ExceptionHandlingMiddleware"/> class.
-    /// </summary>
-    /// <param name="next">The next middleware in the pipeline.</param>
-    /// <param name="logger">The logger instance.</param>
     public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
 
-    /// <summary>
-    /// Invokes the middleware, catching any unhandled exceptions and converting them
-    /// into appropriate Problem Detail responses.
-    /// </summary>
-    /// <param name="context">The HTTP context for the current request.</param>
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -50,7 +36,6 @@ public class ExceptionHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        // If the response has already started, we cannot modify it — just let the exception propagate.
         if (context.Response.HasStarted)
         {
             return;
@@ -133,7 +118,6 @@ public class ExceptionHandlingMiddleware
             )
         };
 
-        // Log at appropriate level
         if (exception is OperationCanceledException)
         {
             _logger.LogDebug(exception, "[Phantom] Request canceled: {Path}", context.Request.Path);

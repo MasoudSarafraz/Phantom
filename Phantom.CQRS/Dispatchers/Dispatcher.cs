@@ -8,44 +8,21 @@ using Phantom.CQRS.Queries;
 
 namespace Phantom.CQRS.Dispatchers;
 
-/// <summary>
-/// Default implementation of <see cref="IDispatcher"/> that resolves handlers
-/// from the DI container and supports pipeline behaviors for both commands and queries.
-/// Reflection results are cached statically to avoid repeated <see cref="Type.MakeGenericType"/>
-/// and <see cref="Type.GetMethod"/> calls on every dispatch.
-/// </summary>
 public class Dispatcher : IDispatcher
 {
     private readonly IServiceProvider _serviceProvider;
 
-    /// <summary>
-    /// Cache for command-with-result handler types and their <c>HandleAsync</c> method info,
-    /// keyed by the concrete command type and result type.
-    /// </summary>
     private static readonly ConcurrentDictionary<(Type RequestType, Type ResultType), (Type HandlerType, MethodInfo HandleMethod)> _commandResultHandlerCache = new();
 
-    /// <summary>
-    /// Cache for query handler types and their <c>HandleAsync</c> method info,
-    /// keyed by the concrete query type and result type.
-    /// </summary>
     private static readonly ConcurrentDictionary<(Type RequestType, Type ResultType), (Type HandlerType, MethodInfo HandleMethod)> _queryHandlerCache = new();
 
-    /// <summary>
-    /// Cache for pipeline behavior interface types and their <c>HandleAsync</c> method info,
-    /// keyed by the request type.
-    /// </summary>
     private static readonly ConcurrentDictionary<Type, (Type InterfaceType, MethodInfo HandleMethod)> _pipelineCache = new();
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Dispatcher"/> class.
-    /// </summary>
-    /// <param name="serviceProvider">The service provider used to resolve handlers and pipeline behaviors.</param>
     public Dispatcher(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
 
-    /// <inheritdoc/>
     public async Task SendAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default) where TCommand : ICommand
     {
         using var scope = _serviceProvider.CreateScope();
@@ -65,7 +42,6 @@ public class Dispatcher : IDispatcher
         await handlerDelegate();
     }
 
-    /// <inheritdoc/>
     public async Task<TResult> SendAsync<TResult>(ICommand<TResult> command, CancellationToken cancellationToken = default)
     {
         var commandType = command.GetType();
@@ -113,7 +89,6 @@ public class Dispatcher : IDispatcher
         return await currentDelegate();
     }
 
-    /// <inheritdoc/>
     public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default)
     {
         var queryType = query.GetType();
@@ -161,11 +136,6 @@ public class Dispatcher : IDispatcher
         return await currentDelegate();
     }
 
-    /// <summary>
-    /// Awaits the pipeline behavior's Task and returns the captured result from the handler.
-    /// This bridges the gap between <see cref="IPipelineBehavior{TRequest}"/> (which returns <see cref="Task"/>)
-    /// and handlers that return <c>Task{TResult}</c>.
-    /// </summary>
     private static async Task<TResult> AwaitPipelineAndGetResult<TResult>(Task pipelineTask, TResult[] resultHolder)
     {
         await pipelineTask;

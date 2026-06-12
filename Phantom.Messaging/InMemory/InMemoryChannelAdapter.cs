@@ -16,7 +16,6 @@ public class InMemoryChannelAdapter : IChannelAdapter
 
     public string ChannelName { get; }
 
-    /// <inheritdoc />
     public bool IsStarted => _isStarted;
 
     public InMemoryChannelAdapter(string channelName, IServiceProvider serviceProvider, ILogger<InMemoryChannelAdapter> logger)

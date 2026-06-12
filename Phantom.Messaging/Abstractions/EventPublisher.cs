@@ -3,26 +3,12 @@ using Phantom.Core.Events;
 
 namespace Phantom.Messaging.Abstractions;
 
-/// <summary>
-/// Default implementation of <see cref="IEventPublisher"/> that dispatches events
-/// to channel adapters via the <see cref="IChannelRegistry"/>.
-/// Uses parallel execution consistently across all overloads, with per-adapter error isolation.
-/// </summary>
 public class EventPublisher : IEventPublisher
 {
     private readonly IChannelRegistry _registry;
     private readonly ILogger<EventPublisher> _logger;
     private readonly bool _throwIfNoChannelFound;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="EventPublisher"/> class.
-    /// </summary>
-    /// <param name="registry">The channel registry for resolving channel adapters.</param>
-    /// <param name="logger">The logger instance for diagnostic output.</param>
-    /// <param name="throwIfNoChannelFound">
-    /// If true, throws an <see cref="InvalidOperationException"/> when no channel adapter is found
-    /// for the target channel or event type. If false (default), logs a warning and returns silently.
-    /// </param>
     public EventPublisher(IChannelRegistry registry, ILogger<EventPublisher> logger, bool throwIfNoChannelFound = false)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
@@ -30,7 +16,6 @@ public class EventPublisher : IEventPublisher
         _throwIfNoChannelFound = throwIfNoChannelFound;
     }
 
-    /// <inheritdoc />
     public async Task PublishAsync<TEvent>(TEvent @event, string channel, CancellationToken ct = default) where TEvent : IIntegrationEvent
     {
         if (ct.IsCancellationRequested) return;
@@ -44,7 +29,6 @@ public class EventPublisher : IEventPublisher
             return;
         }
 
-        // Parallel execution with per-adapter error isolation
         var tasks = adapters.Select(async adapter =>
         {
             try
@@ -61,7 +45,6 @@ public class EventPublisher : IEventPublisher
         await Task.WhenAll(tasks);
     }
 
-    /// <inheritdoc />
     public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken ct = default) where TEvent : IIntegrationEvent
     {
         if (ct.IsCancellationRequested) return;
@@ -75,7 +58,6 @@ public class EventPublisher : IEventPublisher
             return;
         }
 
-        // Parallel execution with per-adapter error isolation (consistent with the channel-specific overload)
         var tasks = adapters.Select(async adapter =>
         {
             try

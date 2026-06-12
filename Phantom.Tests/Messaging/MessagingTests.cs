@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Phantom.Tests.Messaging;
 
-// ─── Test Integration Event ─────────────────────────────────────
 
 public class TestOrderCreatedEvent : IntegrationEvent
 {
@@ -23,7 +22,6 @@ public class TestPaymentProcessedEvent : IntegrationEvent
     public TestPaymentProcessedEvent(decimal amount) { Amount = amount; }
 }
 
-// ─── Test Handlers ──────────────────────────────────────────────
 
 public class TestOrderCreatedHandler : IIntegrationEventHandler<TestOrderCreatedEvent>
 {
@@ -49,7 +47,6 @@ public class TestPaymentHandler : IIntegrationEventHandler<TestPaymentProcessedE
     }
 }
 
-// ─── ChannelRegistry Tests ──────────────────────────────────────
 
 public class ChannelRegistryTests
 {
@@ -102,7 +99,6 @@ public class ChannelRegistryTests
         var registry = CreateRegistry();
         registry.Register("orders", CreateMockAdapter("orders"));
 
-        // CRITICAL FIX TEST: should NOT broadcast to all channels
         var channels = registry.GetChannelsForEvent<TestOrderCreatedEvent>();
         Assert.Empty(channels);
     }
@@ -176,7 +172,6 @@ public class ChannelRegistryTests
     }
 }
 
-// ─── InMemory Channel Tests ─────────────────────────────────────
 
 public class InMemoryChannelTests
 {
@@ -209,7 +204,6 @@ public class InMemoryChannelTests
         var logger = new LoggerFactory().CreateLogger<InMemoryChannelAdapter>();
         var adapter = new InMemoryChannelAdapter("test-channel", sp, logger);
 
-        // Should not throw
         await adapter.PublishAsync(new TestOrderCreatedEvent("ORD-123"));
     }
 
@@ -232,7 +226,6 @@ public class InMemoryChannelTests
     }
 }
 
-// ─── EventPublisher Tests ───────────────────────────────────────
 
 public class EventPublisherTests
 {
@@ -282,7 +275,6 @@ public class EventPublisherTests
     }
 }
 
-// ─── PhantomMessagingOptions Tests ──────────────────────────────
 
 public class PhantomMessagingOptionsTests
 {
@@ -339,7 +331,6 @@ public class PhantomMessagingOptionsTests
     }
 }
 
-// ─── OutboxMessage Tests ────────────────────────────────────────
 
 public class OutboxMessageTests
 {
@@ -355,7 +346,6 @@ public class OutboxMessageTests
     }
 }
 
-// ─── IMessageSerializer Tests ───────────────────────────────────
 
 public class MessageSerializerTests
 {
@@ -406,7 +396,6 @@ public class MessageSerializerTests
     }
 }
 
-// ─── Helper ─────────────────────────────────────────────────────
 
 internal class MockChannelAdapter : IChannelAdapter
 {

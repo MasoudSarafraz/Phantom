@@ -4,16 +4,8 @@ using Phantom.Messaging.Outbox;
 
 namespace Phantom.Data.Outbox;
 
-/// <summary>
-/// EF Core entity type configuration for <see cref="OutboxMessage"/>.
-/// Configures the OutboxMessages table schema, indexes, and column constraints.
-/// </summary>
 public class OutboxMessageConfiguration : IEntityTypeConfiguration<OutboxMessage>
 {
-    /// <summary>
-    /// Configures the entity type for <see cref="OutboxMessage"/>.
-    /// </summary>
-    /// <param name="builder">The entity type builder.</param>
     public void Configure(EntityTypeBuilder<OutboxMessage> builder)
     {
         builder.ToTable("OutboxMessages");

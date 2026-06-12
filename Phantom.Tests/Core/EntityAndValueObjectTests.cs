@@ -3,7 +3,6 @@ using Phantom.Core.Events;
 
 namespace Phantom.Tests.Core;
 
-// ─── Test Helpers ────────────────────────────────────────────────
 
 public class TestEntity : Entity<Guid>
 {
@@ -38,7 +37,6 @@ public class TestAggregateRoot : AggregateRoot<Guid>
     }
 }
 
-// ─── Entity Tests ────────────────────────────────────────────────
 
 public class EntityTests
 {
@@ -81,7 +79,6 @@ public class EntityTests
         var e1 = new TestEntity();
         var e2 = new TestEntity();
 
-        // Two different transient entities should NOT be equal
         Assert.NotEqual(e1, e2);
     }
 
@@ -89,7 +86,7 @@ public class EntityTests
     public void Same_Transient_Entity_Reference_Should_Be_Equal()
     {
         var e1 = new TestEntity();
-        Assert.Equal(e1, e1); // ReferenceEquals
+        Assert.Equal(e1, e1);
     }
 
     [Fact]
@@ -122,7 +119,6 @@ public class EntityTests
     }
 }
 
-// ─── ValueObject Tests ──────────────────────────────────────────
 
 public class Money : ValueObject
 {
@@ -204,13 +200,11 @@ public class ValueObjectTests
     [Fact]
     public void GetHashCode_Should_Have_Good_Distribution()
     {
-        // XOR bug test: Money(5, "USD") and Money(5, "USD") where both components
-        // have the same hash should NOT produce 0
         var m1 = new Money(5, "USD");
         var m2 = new Money(5, "USD");
 
         Assert.Equal(m1.GetHashCode(), m2.GetHashCode());
-        Assert.NotEqual(0, m1.GetHashCode()); // XOR of identical values should not be 0
+        Assert.NotEqual(0, m1.GetHashCode());
     }
 
     [Fact]
@@ -223,7 +217,6 @@ public class ValueObjectTests
     }
 }
 
-// ─── AggregateRoot Tests ────────────────────────────────────────
 
 public class AggregateRootTests
 {
@@ -268,7 +261,6 @@ public class AggregateRootTests
     }
 }
 
-// ─── SoftDeleteEntity Tests ─────────────────────────────────────
 
 public class TestSoftDeleteEntity : SoftDeleteEntity<Guid>
 {
@@ -297,7 +289,7 @@ public class SoftDeleteEntityTests
         entity.SoftDelete();
         var deletedAt1 = entity.DeletedAt;
 
-        entity.SoftDelete(); // should not throw or change
+        entity.SoftDelete();
         Assert.Equal(deletedAt1, entity.DeletedAt);
     }
 
@@ -317,7 +309,7 @@ public class SoftDeleteEntityTests
     public void Restore_Should_Be_Idempotent()
     {
         var entity = new TestSoftDeleteEntity(Guid.NewGuid());
-        entity.Restore(); // not deleted yet
+        entity.Restore();
         Assert.False(entity.IsDeleted);
     }
 
@@ -329,7 +321,6 @@ public class SoftDeleteEntityTests
     }
 }
 
-// ─── AuditableEntity Tests ──────────────────────────────────────
 
 public class TestAuditableEntity : AuditableEntity<Guid>, IAuditable
 {
@@ -356,7 +347,7 @@ public class AuditableEntityTests
         entity.SetCreated("user1");
         var createdAt = entity.CreatedAt;
 
-        entity.SetCreated("user2"); // should not override
+        entity.SetCreated("user2");
         Assert.Equal("user1", entity.CreatedBy);
         Assert.Equal(createdAt, entity.CreatedAt);
     }
@@ -379,7 +370,6 @@ public class AuditableEntityTests
     }
 }
 
-// ─── AuditableSoftDeleteEntity Tests ────────────────────────────
 
 public class TestAuditableSoftDeleteEntity : AuditableSoftDeleteEntity<Guid>, IAuditable
 {
@@ -408,7 +398,7 @@ public class AuditableSoftDeleteEntityTests
         var deletedAt1 = entity.DeletedAt;
 
         entity.SoftDelete("other");
-        Assert.Equal("admin", entity.DeletedBy); // not overwritten
+        Assert.Equal("admin", entity.DeletedBy);
     }
 
     [Fact]
