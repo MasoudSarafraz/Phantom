@@ -10,8 +10,4 @@
     <ProjectReference Include="..\..\Phantom.AspNetCore\Phantom.AspNetCore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-  </ItemGroup>
-
 </Project>
