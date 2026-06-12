@@ -1,3 +1,4 @@
+using Swashbuckle.AspNetCore;
 using ECommerce.Application.IntegrationEvents;
 using ECommerce.Domain.Events;
 using ECommerce.Infrastructure;
