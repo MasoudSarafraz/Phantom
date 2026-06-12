@@ -1,4 +1,6 @@
 using ECommerce.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Phantom.Core.Events;
 using Phantom.Data.EfCore;
 
 namespace ECommerce.Infrastructure.Persistence;
