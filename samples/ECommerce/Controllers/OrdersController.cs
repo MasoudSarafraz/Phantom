@@ -23,7 +23,7 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateOrderCommand command)
     {
-        var id = await _dispatcher.SendAsync(command);
+        var id = await _dispatcher.SendAsync<Guid>(command);
         return CreatedAtAction(nameof(GetById), new { id }, id);
     }
 

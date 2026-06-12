@@ -1,59 +1,58 @@
 using ECommerce.Application.IntegrationEvents;
+using ECommerce.Domain.Events;
 using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Phantom.AspNetCore.Extensions;
-using Phantom.Data.Interceptors;
+using Phantom.Core.Events;
+using Phantom.Core.Services;
+using Phantom.CQRS.Extensions;
+using Phantom.Data.EfCore;
+using Phantom.Data.Extensions;
 using Phantom.Data.Services;
+using Phantom.Data.Specifications;
+using Phantom.Messaging.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-builder.Services.AddPhantom(typeof(Program).Assembly, phantom =>
-{
-    phantom.UseInMemoryDatabase(opt =>
-    {
-        opt.UseSoftDelete = true;
-        opt.UseAuditable = true;
-    });
+builder.Services.AddPhantomCQRS(typeof(Program).Assembly);
+builder.Services.AddPhantomValidation();
 
-    phantom.AddChannel("orders", channel => channel.UseInMemory());
-    phantom.AddChannel("notifications", channel => channel.UseInMemory());
+builder.Services.AddSingleton<ISpecificationEvaluator, EfSpecificationEvaluator>();
 
-    phantom.RouteEvent<OrderCreatedIntegrationEvent>("orders", "notifications");
-    phantom.RouteEvent<OrderShippedIntegrationEvent>("orders");
-
-    phantom.UseFluentValidation();
-    phantom.UseSoftDelete();
-    phantom.UseAuditable();
-    phantom.ConfigureRetry(maxRetries: 3);
-    phantom.ConfigureCircuitBreaker(failureThreshold: 5);
-});
-
-builder.Services.RemoveAll<PhantomDbContext>();
-builder.Services.RemoveAll<DbContextOptions<PhantomDbContext>>();
-builder.Services.AddDbContext<ECommerceDbContext>(options =>
+builder.Services.AddDbContext<ECommerceDbContext>((sp, options) =>
 {
     options.UseInMemoryDatabase("ECommerceDb");
-    options.AddInterceptors(new SoftDeleteInterceptor(), new AuditableInterceptor());
+    options.AddInterceptors(
+        new Phantom.Data.Interceptors.SoftDeleteInterceptor(sp.GetService<ICurrentUserService>()),
+        new Phantom.Data.Interceptors.AuditableInterceptor(sp.GetService<ICurrentUserService>()));
 });
+
 builder.Services.AddScoped<PhantomDbContext>(sp => sp.GetRequiredService<ECommerceDbContext>());
-builder.Services.Replace(ServiceDescriptor.Scoped<ICurrentUserService, CurrentUserService>());
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
+builder.Services.TryAddScoped<ICurrentUserService, CurrentUserService>();
+
+builder.Services.AddScoped<IDomainEventHandler<OrderPlacedEvent>, ECommerce.Application.Handlers.OrderPlacedEventHandler>();
+builder.Services.AddScoped<IDomainEventHandler<OrderShippedEvent>, ECommerce.Application.Handlers.OrderShippedEventHandler>();
+
+builder.Services.AddPhantomMessaging(new[] { typeof(Program).Assembly }, messaging =>
+{
+    messaging.AddChannel("orders", channel => channel.UseInMemory());
+    messaging.AddChannel("notifications", channel => channel.UseInMemory());
+    messaging.RouteEvent<OrderCreatedIntegrationEvent>("orders", "notifications");
+    messaging.RouteEvent<OrderShippedIntegrationEvent>("orders");
+});
 
 builder.Services.AddHealthChecks()
     .AddPhantomDatabaseHealthCheck()
     .AddPhantomBrokerHealthCheck("orders");
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UsePhantom();
 app.MapControllers();

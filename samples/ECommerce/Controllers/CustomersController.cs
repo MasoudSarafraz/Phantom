@@ -23,7 +23,7 @@ public class CustomersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateCustomerCommand command)
     {
-        var id = await _dispatcher.SendAsync(command);
+        var id = await _dispatcher.SendAsync<Guid>(command);
         return CreatedAtAction(nameof(GetById), new { id }, id);
     }
 }
