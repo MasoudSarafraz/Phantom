@@ -1,32 +1,52 @@
+using ECommerce.Application.IntegrationEvents;
 using ECommerce.Domain.Events;
 using Phantom.Core.Events;
+using Phantom.Messaging.Abstractions;
 
 namespace ECommerce.Application.Handlers;
 
 public class OrderPlacedEventHandler : IDomainEventHandler<OrderPlacedEvent>
 {
     private readonly ILogger<OrderPlacedEventHandler> _logger;
+    private readonly IEventPublisher _eventPublisher;
 
-    public OrderPlacedEventHandler(ILogger<OrderPlacedEventHandler> logger) => _logger = logger;
-
-    public Task HandleAsync(OrderPlacedEvent domainEvent, CancellationToken cancellationToken = default)
+    public OrderPlacedEventHandler(ILogger<OrderPlacedEventHandler> logger, IEventPublisher eventPublisher)
     {
-        _logger.LogInformation("Order {OrderId} placed. Customer: {CustomerId}, Total: {Amount} {Currency}",
+        _logger = logger;
+        _eventPublisher = eventPublisher;
+    }
+
+    public async Task HandleAsync(OrderPlacedEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("[Domain] Order {OrderId} placed. Customer: {CustomerId}, Total: {Amount} {Currency}",
             domainEvent.OrderId, domainEvent.CustomerId, domainEvent.TotalAmount, domainEvent.Currency);
-        return Task.CompletedTask;
+
+        await _eventPublisher.PublishAsync(new OrderCreatedIntegrationEvent(
+            domainEvent.OrderId,
+            domainEvent.CustomerId,
+            domainEvent.TotalAmount,
+            domainEvent.Currency), cancellationToken);
     }
 }
 
 public class OrderShippedEventHandler : IDomainEventHandler<OrderShippedEvent>
 {
     private readonly ILogger<OrderShippedEventHandler> _logger;
+    private readonly IEventPublisher _eventPublisher;
 
-    public OrderShippedEventHandler(ILogger<OrderShippedEventHandler> logger) => _logger = logger;
-
-    public Task HandleAsync(OrderShippedEvent domainEvent, CancellationToken cancellationToken = default)
+    public OrderShippedEventHandler(ILogger<OrderShippedEventHandler> logger, IEventPublisher eventPublisher)
     {
-        _logger.LogInformation("Order {OrderId} shipped. Tracking: #{TrackingNumber}",
+        _logger = logger;
+        _eventPublisher = eventPublisher;
+    }
+
+    public async Task HandleAsync(OrderShippedEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("[Domain] Order {OrderId} shipped. Tracking: #{TrackingNumber}",
             domainEvent.OrderId, domainEvent.TrackingNumber);
-        return Task.CompletedTask;
+
+        await _eventPublisher.PublishAsync(new OrderShippedIntegrationEvent(
+            domainEvent.OrderId,
+            domainEvent.TrackingNumber), cancellationToken);
     }
 }
