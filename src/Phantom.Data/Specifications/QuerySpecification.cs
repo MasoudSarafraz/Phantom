@@ -3,11 +3,6 @@ using System.Linq.Expressions;
 
 namespace Phantom.Data.Specifications;
 
-/// <summary>
-/// Base query specification that extends domain <see cref="Specification{T}"/>
-/// with infrastructure concerns: includes, tracking, ordering, and paging.
-/// Use this as the base class for specifications that need EF Core features.
-/// </summary>
 public abstract class QuerySpecification<T> : Specification<T>, IQuerySpecification<T>
 {
     private readonly List<Expression<Func<T, object>>> _includes = new();

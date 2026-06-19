@@ -34,11 +34,6 @@ public class Result<T> : Result
         return IsSuccess ? onSuccess(_value) : onFailure(Error);
     }
 
-    /// <summary>
-    /// Throws a <see cref="BusinessRuleException"/> if this result represents a failure.
-    /// On success, returns <c>this</c> so the caller can chain <c>.Value</c> to access
-    /// the payload. This mirrors <see cref="Result.ThrowIfFailure"/> for the typed case.
-    /// </summary>
     public new Result<T> ThrowIfFailure()
     {
         if (IsFailure)

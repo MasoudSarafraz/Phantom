@@ -2,12 +2,6 @@ using Phantom.Core.Events;
 
 namespace ECommerce.IntegrationContracts;
 
-/// <summary>
-/// Integration event published when a new order is confirmed.
-/// Lives in a separate IntegrationContracts project so that both the producing service
-/// (ECommerce.Api) and any consuming service can reference the same contract assembly
-/// without dragging in domain or application code.
-/// </summary>
 public class OrderCreatedIntegrationEvent : IntegrationEvent
 {
     public Guid OrderId { get; }

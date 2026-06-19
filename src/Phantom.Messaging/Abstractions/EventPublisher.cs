@@ -3,12 +3,6 @@ using Phantom.Core.Events;
 
 namespace Phantom.Messaging.Abstractions;
 
-/// <summary>
-/// Publishes integration events to one or more <see cref="IChannelAdapter"/> instances
-/// discovered through the <see cref="IChannelRegistry"/>. Publishing is wrapped in the
-/// configured <see cref="IResiliencePipeline"/> so that transient broker failures are
-/// retried and protected by a circuit breaker.
-/// </summary>
 public class EventPublisher : IEventPublisher
 {
     private readonly IChannelRegistry _registry;
@@ -41,8 +35,6 @@ public class EventPublisher : IEventPublisher
             return;
         }
 
-        // Wrap the per-adapter publish with the resilience pipeline so that retry/circuit-breaker
-        // applies to the broker interaction (not to the per-adapter parallel fan-out).
         var tasks = adapters.Select(adapter => PublishWithResilienceAsync(adapter, @event, channel, ct));
         await Task.WhenAll(tasks);
     }

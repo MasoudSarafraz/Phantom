@@ -2,11 +2,6 @@ using Phantom.Core.Domain;
 
 namespace ECommerce.Domain.ValueObjects;
 
-/// <summary>
-/// Money value object — amount + ISO currency code.
-/// The [Owned] EF Core attribute is intentionally NOT applied here — persistence concerns
-/// belong in the infrastructure layer (ECommerceDbContext configures ownership via OwnsOne).
-/// </summary>
 public class Money : ValueObject
 {
     public decimal Amount { get; private set; }

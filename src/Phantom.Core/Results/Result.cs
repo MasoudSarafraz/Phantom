@@ -39,17 +39,6 @@ public class Result
         return IsSuccess ? onSuccess() : Failure(Error);
     }
 
-    /// <summary>
-    /// Throws a <see cref="BusinessRuleException"/> if this result represents a failure.
-    /// Use this to convert a Result-based invariant check into an exception when the calling
-    /// context prefers exception-based flow (e.g., inside ASP.NET Core controllers that
-    /// delegate to <c>ExceptionHandlingMiddleware</c> to render RFC 7807 Problem Details).
-    ///
-    /// This bridges the Result-first and Exception-first programming styles so application
-    /// code can choose the style that fits the call site without forcing the aggregate to
-    /// commit to one or the other.
-    /// </summary>
-    /// <returns>This same <see cref="Result"/> if it represents success.</returns>
     public Result ThrowIfFailure()
     {
         if (IsFailure)

@@ -14,9 +14,6 @@ public class CustomersController : ControllerBase
 
     public CustomersController(IDispatcher dispatcher) => _dispatcher = dispatcher;
 
-    /// <summary>
-    /// GET /api/customers/{id} — Simple GetById query
-    /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CustomerDto>> GetById(Guid id)
     {
@@ -24,10 +21,6 @@ public class CustomersController : ControllerBase
         return Ok(customer);
     }
 
-    /// <summary>
-    /// GET /api/customers/{id}/orders?page=1&amp;pageSize=10
-    /// Example: List customer orders using Specification with Include + Paging
-    /// </summary>
     [HttpGet("{id:guid}/orders")]
     public async Task<ActionResult<PagedResult<OrderDto>>> GetOrders(
         Guid id,
@@ -38,11 +31,6 @@ public class CustomersController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// POST /api/customers — Create customer
-    /// Example: Handler returns Result&lt;Guid&gt; instead of throwing.
-    /// The Result monad lets us return proper HTTP status codes without exception overhead.
-    /// </summary>
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateCustomerCommand command)
     {

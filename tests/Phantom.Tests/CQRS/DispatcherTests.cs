@@ -8,13 +8,11 @@ using FluentValidation;
 
 namespace Phantom.Tests.CQRS;
 
-
 public record CreateOrderCommand(string ProductName, int Quantity) : ICommand;
 
 public record CreateOrderResult(Guid OrderId) : ICommand<Guid>;
 
 public record GetOrderQuery(Guid OrderId) : IQuery<string>;
-
 
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand>
 {
@@ -41,7 +39,6 @@ public class GetOrderHandler : IQueryHandler<GetOrderQuery, string>
         return Task.FromResult($"Order-{query.OrderId}");
     }
 }
-
 
 public class DispatcherTests
 {
@@ -101,7 +98,6 @@ public class DispatcherTests
     }
 }
 
-
 public class TestLoggingPipeline : IPipelineBehavior<CreateOrderCommand>
 {
     public static bool WasCalled = false;
@@ -130,7 +126,6 @@ public class PipelineBehaviorTests
         Assert.True(CreateOrderHandler.WasCalled);
     }
 }
-
 
 public record ValidatedCommand(string Name, int Age) : ICommand;
 
@@ -180,7 +175,6 @@ public class ValidationPipelineTests
             dispatcher.SendAsync(new ValidatedCommand("", -1)));
     }
 }
-
 
 public class MultiAssemblyTests
 {

@@ -12,11 +12,6 @@ public abstract class AuditableSoftDeleteEntity<TId> : AuditableEntity<TId>, ISo
 
     protected AuditableSoftDeleteEntity(TId id) : base(id) { }
 
-    /// <summary>
-    /// Marks the entity as soft-deleted (ISoftDeletable implementation).
-    /// Sets DeletedBy to null — use <see cref="SoftDelete(string?)"/> overload
-    /// to record which user performed the deletion.
-    /// </summary>
     public virtual void SoftDelete()
     {
         if (IsDeleted) return;
@@ -25,9 +20,6 @@ public abstract class AuditableSoftDeleteEntity<TId> : AuditableEntity<TId>, ISo
         DeletedAt = DateTimeOffset.UtcNow;
     }
 
-    /// <summary>
-    /// Marks the entity as soft-deleted and records who performed the deletion.
-    /// </summary>
     public virtual void SoftDelete(string? deletedBy)
     {
         if (IsDeleted) return;

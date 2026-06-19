@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -17,9 +17,6 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
-  <!-- Expose internal infrastructure-only types (e.g. IAggregateRootPersistence) to Phantom.Data
-       so that PhantomDbContext can clear domain events after SaveChanges without making
-       ClearDomainEvents part of the public IAggregateRoot contract. -->
   <ItemGroup>
     <InternalsVisibleTo Include="Phantom.Data" />
     <InternalsVisibleTo Include="Phantom.Tests" />

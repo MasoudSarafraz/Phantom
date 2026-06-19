@@ -5,11 +5,6 @@ using Phantom.Infrastructure.Abstractions.Idempotency;
 
 namespace Phantom.Messaging.Abstractions;
 
-/// <summary>
-/// Decorator that wraps an <see cref="IIntegrationEventHandler{TEvent}"/> with idempotency protection.
-/// Before handling an event, it checks <see cref="IIdempotencyTracker"/> to skip already-processed events.
-/// After successful handling, it marks the event as processed to prevent duplicate processing.
-/// </summary>
 public class IdempotentIntegrationEventHandlerDecorator<TEvent> : IIntegrationEventHandler<TEvent>
     where TEvent : IIntegrationEvent
 {

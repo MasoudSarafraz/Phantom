@@ -37,10 +37,7 @@ public abstract class Entity<TId> where TId : notnull
 
     public override int GetHashCode()
     {
-        // For transient entities (not yet persisted, Id == default), fall back to
-        // reference identity so distinct transient entities do not collide inside
-        // hash-based collections. Once persisted, hash by (Type, Id) as required
-        // by the Entity equality contract.
+
         if (IsTransient())
         {
             return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);

@@ -2,12 +2,6 @@ using Phantom.Core.Domain;
 
 namespace ECommerce.Domain.ValueObjects;
 
-/// <summary>
-/// Email address value object.
-/// The [Owned] EF Core attribute is intentionally NOT applied here — applying persistence
-/// concerns inside the Domain layer would couple it to EF Core. Instead, the ECommerceDbContext
-/// configures email ownership via OwnsOne(...) in OnModelCreating.
-/// </summary>
 public class EmailAddress : ValueObject
 {
     public string Value { get; private set; } = default!;

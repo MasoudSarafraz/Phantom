@@ -2,11 +2,6 @@ using System.Linq.Expressions;
 
 namespace Phantom.Core.Specifications;
 
-/// <summary>
-/// Base specification class with domain-level combinators (And, Or, Not).
-/// For infrastructure/query concerns (includes, tracking, ordering, paging),
-/// use <c>QuerySpecification&lt;T&gt;</c> in the Phantom.Data package.
-/// </summary>
 public abstract class Specification<T> : ISpecification<T>
 {
     public abstract bool IsSatisfiedBy(T candidate);

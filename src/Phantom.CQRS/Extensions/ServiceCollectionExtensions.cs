@@ -14,7 +14,6 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        // Try to use GeneratedDispatcher if available; fall back to reflection-based Dispatcher
         var generatedDispatcherType = Type.GetType("Phantom.CQRS.Dispatchers.GeneratedDispatcher, Phantom.CQRS.SourceGenerator");
         if (generatedDispatcherType is not null)
         {

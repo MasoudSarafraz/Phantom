@@ -3,7 +3,6 @@ using Phantom.Core.Events;
 
 namespace Phantom.Tests.Core;
 
-
 public class TestEntity : Entity<Guid>
 {
     public TestEntity(Guid id) : base(id) { }
@@ -36,7 +35,6 @@ public class TestAggregateRoot : AggregateRoot<Guid>
         AddDomainEvent(new TestDomainEvent(eventData));
     }
 }
-
 
 public class EntityTests
 {
@@ -92,23 +90,20 @@ public class EntityTests
     [Fact]
     public void Transient_Entities_Should_Have_Stable_HashCode_By_Reference()
     {
-        // Regression test: previously, two transient entities returned HashCode.Combine(GetType(), default!)
-        // which collided in Dictionary/HashSet. Now they fall back to RuntimeHelpers.GetHashCode(this).
+
         var e1 = new TestEntity();
         var e2 = new TestEntity();
 
-        // Reference identity hashcode should be stable across calls.
         Assert.Equal(e1.GetHashCode(), e1.GetHashCode());
         Assert.Equal(e2.GetHashCode(), e2.GetHashCode());
 
-        // Two distinct transient entities should have (with overwhelming probability) distinct hashes.
         Assert.NotEqual(e1.GetHashCode(), e2.GetHashCode());
     }
 
     [Fact]
     public void HashSet_Should_Distinguish_Distinct_Transient_Entities()
     {
-        // Regression test: a HashSet would previously collapse distinct transient entities into one slot.
+
         var set = new HashSet<TestEntity>();
         var e1 = new TestEntity();
         var e2 = new TestEntity();
@@ -157,7 +152,6 @@ public class EntityTests
         Assert.Equal(0, entity.Version);
     }
 }
-
 
 public class Money : ValueObject
 {
@@ -256,7 +250,6 @@ public class ValueObjectTests
     }
 }
 
-
 public class AggregateRootTests
 {
     [Fact]
@@ -302,16 +295,13 @@ public class AggregateRootTests
     [Fact]
     public void IAggregateRoot_Interface_Should_Not_Expose_ClearDomainEvents()
     {
-        // The public IAggregateRoot contract must NOT include ClearDomainEvents.
-        // This is an infrastructure concern that should only be invoked through
-        // the internal IAggregateRootPersistence pathway.
+
         var interfaceType = typeof(IAggregateRoot);
         var method = interfaceType.GetMethod(nameof(AggregateRoot<Guid>.ClearDomainEvents));
 
         Assert.Null(method);
     }
 }
-
 
 public class TestSoftDeleteEntity : SoftDeleteEntity<Guid>
 {
@@ -372,7 +362,6 @@ public class SoftDeleteEntityTests
     }
 }
 
-
 public class TestAuditableEntity : AuditableEntity<Guid>, IAuditable
 {
     public TestAuditableEntity(Guid id) : base(id) { }
@@ -421,13 +410,11 @@ public class AuditableEntityTests
     }
 }
 
-
 public class TestAuditableSoftDeleteEntity : AuditableSoftDeleteEntity<Guid>, IAuditable
 {
     public TestAuditableSoftDeleteEntity(Guid id) : base(id) { }
     public TestAuditableSoftDeleteEntity() { }
 }
-
 
 public class TestAuditableAggregateRoot : AuditableAggregateRoot<Guid>
 {
@@ -450,7 +437,6 @@ public class TestAuditableSoftDeleteAggregateRoot : AuditableSoftDeleteAggregate
 
     public void DoWork(string data) => AddDomainEvent(new TestDomainEvent(data));
 }
-
 
 public class AuditableAggregateRootTests
 {
@@ -498,7 +484,6 @@ public class AuditableAggregateRootTests
     }
 }
 
-
 public class SoftDeleteAggregateRootTests
 {
     [Fact]
@@ -536,7 +521,6 @@ public class SoftDeleteAggregateRootTests
         Assert.Null(ar.DeletedAt);
     }
 }
-
 
 public class AuditableSoftDeleteAggregateRootTests
 {
@@ -578,13 +562,12 @@ public class AuditableSoftDeleteAggregateRootTests
     [Fact]
     public void Should_Raise_Domain_Events()
     {
-        // Verify that being auditable + soft-deletable does not break the core aggregate behavior.
+
         var ar = new TestAuditableSoftDeleteAggregateRoot(Guid.NewGuid());
         ar.DoWork("audit-softdelete-event");
         Assert.Single(ar.DomainEvents);
     }
 }
-
 
 public class AuditableSoftDeleteEntityTests
 {

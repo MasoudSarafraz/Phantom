@@ -7,26 +7,13 @@ using Phantom.Messaging.Abstractions;
 
 namespace Phantom.Messaging.MessagePack;
 
-/// <summary>
-/// <see cref="IMessageSerializer"/> implementation backed by MessagePack.
-///
-/// MessagePack produces compact binary payloads (typically 3-5x smaller than JSON for the
-/// same data) and serializes faster than System.Text.Json. Use this when throughput or
-/// payload size matter more than human readability — e.g. high-volume event streams between
-/// microservices, or RabbitMQ deployments where message size affects network cost.
-///
-/// Type resolution is performed by MessagePack's <see cref="TypelessContractlessStandardResolver"/>
-/// so that no [MessagePackObject] attributes are required on integration event classes.
-/// </summary>
 public class MessagePackMessageSerializer : IMessageSerializer
 {
     private readonly MessagePackSerializerOptions _options;
 
     public MessagePackMessageSerializer(MessagePackSerializerOptions? options = null)
     {
-        // Default to the TypelessContractlessStandardResolver so that any POCO can be
-        // serialized without [MessagePackObject] attributes. This matches the way
-        // JsonMessageSerializer works (no attributes required on event classes).
+
         _options = options ?? TypelessContractlessStandardResolver.Options;
     }
 
@@ -67,11 +54,7 @@ public class MessagePackMessageSerializer : IMessageSerializer
 
 public static class MessagePackServiceCollectionExtensions
 {
-    /// <summary>
-    /// Replaces the default <see cref="IMessageSerializer"/> registration with a
-    /// <see cref="MessagePackMessageSerializer"/>. Call this AFTER AddPhantom() so the
-    /// registration overrides the default JsonMessageSerializer that Phantom registers.
-    /// </summary>
+
     public static IServiceCollection UseMessagePackSerializer(
         this IServiceCollection services,
         MessagePackSerializerOptions? options = null)

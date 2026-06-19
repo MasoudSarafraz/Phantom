@@ -14,9 +14,6 @@ public class ProductsController : ControllerBase
 
     public ProductsController(IDispatcher dispatcher) => _dispatcher = dispatcher;
 
-    /// <summary>
-    /// GET /api/products/{id} — Simple GetById query
-    /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDto>> GetById(Guid id)
     {
@@ -24,10 +21,6 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    /// <summary>
-    /// GET /api/products?keyword=laptop&amp;page=1&amp;pageSize=20
-    /// Example: Search products using Specification with Paging + OrderBy + AsNoTracking
-    /// </summary>
     [HttpGet]
     public async Task<ActionResult<PagedResult<ProductDto>>> Search(
         [FromQuery] string? keyword = null,
@@ -38,9 +31,6 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// POST /api/products — Create a new product
-    /// </summary>
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateProductCommand command)
     {

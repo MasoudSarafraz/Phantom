@@ -7,9 +7,6 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <!-- Integration contracts are shared between the producing service (ECommerce.Api) and any
-       consuming services. This project therefore has zero project references — only Phantom.Core
-       for the IntegrationEvent base class. -->
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Phantom.Core\Phantom.Core.csproj" />
   </ItemGroup>

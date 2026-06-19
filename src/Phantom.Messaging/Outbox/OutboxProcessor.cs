@@ -100,10 +100,6 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
                 return;
             }
 
-            // Wrap the actual broker publish in the resilience pipeline. The pipeline applies
-            // retry + circuit-breaker per outbox message. If the pipeline exhausts its retries,
-            // the exception propagates and we fall into the catch below, which marks the
-            // message for the next OutboxProcessor sweep.
             await _resilience.ExecuteAsync(async token =>
             {
                 if (message.Channel != OutboxMessage.DefaultChannel)

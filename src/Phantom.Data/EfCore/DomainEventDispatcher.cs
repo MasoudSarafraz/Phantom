@@ -53,8 +53,6 @@ public class DomainEventDispatcher : IDomainEventDispatcher
             }
         }
 
-        // If any handler failed, throw an aggregate exception so the caller knows about the failure.
-        // This prevents silent data inconsistency when outbox is disabled.
         if (exceptions.Count > 0)
         {
             throw new AggregateException(

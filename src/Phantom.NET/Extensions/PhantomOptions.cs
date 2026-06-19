@@ -55,11 +55,6 @@ public class PhantomOptions
         return this;
     }
 
-    /// <summary>
-    /// Configures a default Kafka channel with the specified bootstrap servers.
-    /// This is a convenience method that creates a channel named "default" using Kafka.
-    /// For multi-channel setups, use <see cref="AddChannel"/> with <c>channel.UseKafka(...)</c> instead.
-    /// </summary>
     public PhantomOptions UseKafka(string bootstrapServers, Action<KafkaOptions>? configure = null)
     {
         if (string.IsNullOrWhiteSpace(bootstrapServers))
@@ -84,11 +79,6 @@ public class PhantomOptions
         return this;
     }
 
-    /// <summary>
-    /// Strongly-typed overload of <see cref="AddChannel(string, Action{ChannelBuilder})"/>.
-    /// Use this with a <c>ChannelName</c> declared as a constant in your application so
-    /// typos at registration or publish time become compile-time errors.
-    /// </summary>
     public PhantomOptions AddChannel(ChannelName name, Action<ChannelBuilder> configure)
         => AddChannel(name.Value, configure);
 
@@ -117,10 +107,6 @@ public class PhantomOptions
         return this;
     }
 
-    /// <summary>
-    /// Disables the outbox pattern. Not recommended for production — domain events may be lost on failure.
-    /// Use only for simple CRUD scenarios or testing where event reliability is not required.
-    /// </summary>
     public PhantomOptions DisableOutbox()
     {
         DataOptions.UseOutbox = false;
@@ -144,10 +130,6 @@ public class PhantomOptions
         return this;
     }
 
-    /// <summary>
-    /// Strongly-typed overload of <see cref="RouteEvent{TEvent}(string[])"/> that accepts
-    /// <see cref="ChannelName"/> instances instead of raw strings.
-    /// </summary>
     public PhantomOptions RouteEvent<TEvent>(params ChannelName[] channelNames) where TEvent : Core.Events.IIntegrationEvent
     {
         if (channelNames is null || channelNames.Length == 0)
@@ -176,28 +158,15 @@ public class PhantomOptions
         return this;
     }
 
-    /// <summary>
-    /// Validates the configuration invariants that, if violated, would otherwise only surface
-    /// at runtime as cryptic resolution errors. This is called by <c>AddPhantom</c> at startup
-    /// so that misconfiguration fails the application boot instead of failing later.
-    ///
-    /// The checks are intentionally conservative: they only flag combinations of options that
-    /// cannot possibly work. Anything ambiguous is left for the runtime to decide.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the combination of configured options is impossible to satisfy.
-    /// The exception message describes exactly which combination is broken.
-    /// </exception>
     internal void Validate()
     {
-        // 1) Database provider must be selected.
+
         if (DataOptions.Provider == DatabaseProvider.InMemory)
         {
-            // InMemory is the default; allowed for dev/test but should warn if Outbox/Idempotency is on.
+
             if (DataOptions.UseOutbox || DataOptions.UseIdempotency)
             {
-                // We do NOT throw — InMemory + Outbox works for tests — but the user should know.
-                // Logged by the framework at startup; nothing to enforce here.
+
             }
         }
         else if (string.IsNullOrWhiteSpace(DataOptions.ConnectionString))
@@ -207,8 +176,6 @@ public class PhantomOptions
                 "Call UsePostgreSQL(connectionString) or UseSqlServer(connectionString) with a valid connection string.");
         }
 
-        // 2) If any messaging feature is configured, at least one channel must exist.
-        //    A user who calls RouteEvent but forgot AddChannel gets a silent no-op at publish time otherwise.
         if (MessagingOptions.EventChannelMappings.Count > 0 && MessagingOptions.ChannelBuilders.Count == 0)
         {
             throw new InvalidOperationException(
@@ -216,7 +183,6 @@ public class PhantomOptions
                 "Call AddChannel(name, c => c.UseRabbitMq(...)/UseKafka(...)/UseInMemory()) at least once.");
         }
 
-        // 3) Every RouteEvent target channel must exist.
         var registeredChannels = MessagingOptions.ChannelBuilders.Keys.ToHashSet();
         foreach (var (eventType, channels) in MessagingOptions.EventChannelMappings)
         {
@@ -232,8 +198,6 @@ public class PhantomOptions
             }
         }
 
-        // 4) If Outbox is enabled, the data layer needs a connection. (For InMemory provider,
-        //    it's allowed because the EF InMemory provider works without a connection string.)
         if (DataOptions.UseOutbox
             && DataOptions.Provider != DatabaseProvider.InMemory
             && string.IsNullOrWhiteSpace(DataOptions.ConnectionString))
@@ -243,8 +207,5 @@ public class PhantomOptions
                 "The outbox table must live in a real database; call UsePostgreSQL/UseSqlServer.");
         }
 
-        // 5) Circuit breaker without retry is technically allowed but almost never what you want.
-        //    We do NOT throw — but we surface the implication in a single visible place.
-        // (Intentionally not enforced — kept here for documentation of the convention.)
     }
 }

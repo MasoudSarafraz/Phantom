@@ -27,7 +27,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
     private volatile bool _isStarted;
     private volatile bool _isDisposed;
 
-    // Pre-parsed enum values — resolved once during construction to fail fast on invalid config
     private readonly Acks _parsedAcks;
     private readonly SecurityProtocol _parsedSecurityProtocol;
     private readonly AutoOffsetReset _parsedAutoOffsetReset;
@@ -50,8 +49,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
         _serviceProvider = serviceProvider;
         _logger = logger;
 
-        // Fail fast: parse enum values at construction time so invalid config
-        // throws during DI registration rather than at first publish/consume.
         _parsedAcks = Enum.Parse<Acks>(options.Acks, ignoreCase: true);
         _parsedSecurityProtocol = Enum.Parse<SecurityProtocol>(options.SecurityProtocol, ignoreCase: true);
         _parsedAutoOffsetReset = Enum.Parse<AutoOffsetReset>(options.AutoOffsetReset, ignoreCase: true);
@@ -90,7 +87,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             _consumerCts?.Cancel();
         }
 
-        // Wait for consumer task outside the lock to avoid deadlock
         if (_consumerTask != null)
         {
             try
@@ -99,7 +95,7 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             }
             catch (OperationCanceledException)
             {
-                // Shutdown requested — acceptable
+
             }
         }
 
@@ -183,7 +179,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             });
         }
 
-        // If already started, restart consumer to pick up the new subscription
         if (_isStarted)
         {
             lock (_lock)
@@ -248,7 +243,7 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
 
     private void RestartConsumerIfNeeded()
     {
-        // Stop existing consumer
+
         _consumerCts?.Cancel();
         try
         {
@@ -256,18 +251,18 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
         }
         catch (AggregateException)
         {
-            // Cancellation is expected
+
         }
         catch (OperationCanceledException)
         {
-            // Cancellation is expected
+
         }
 
         try
         {
             _consumer?.Close();
         }
-        catch { /* ignore */ }
+        catch {  }
         _consumer?.Dispose();
 
         _consumer = null;
@@ -275,7 +270,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
         _consumerCts = null;
         _consumerTask = null;
 
-        // Start fresh consumer with all current subscriptions
         if (_handlers.Any())
         {
             StartConsumer();
@@ -294,7 +288,7 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
                 ConsumeResult<string, byte[]>? consumeResult = null;
                 try
                 {
-                    var consumer = _consumer; // Capture reference to avoid race with StopAsync
+                    var consumer = _consumer;
                     if (consumer == null) break;
 
                     consumeResult = consumer.Consume(ct);
@@ -329,7 +323,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
                 {
                     _logger.LogError(ex, "[Phantom] Error processing Kafka message on channel '{Channel}'", ChannelName);
 
-                    // Publish to dead-letter topic for failed messages (if enabled)
                     if (_options.EnableDeadLetterTopic)
                     {
                         await PublishToDeadLetterAsync(consumeResult, ex, ct);
@@ -339,7 +332,7 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            // Graceful shutdown — expected
+
         }
         catch (Exception ex)
         {
@@ -353,7 +346,7 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
 
     private async Task ProcessMessage(ConsumeResult<string, byte[]> consumeResult, CancellationToken ct)
     {
-        // Extract event type from headers
+
         string? eventTypeName = null;
         if (consumeResult.Message.Headers != null)
         {
@@ -364,7 +357,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             }
         }
 
-        // Fallback: try to infer from topic name
         if (string.IsNullOrWhiteSpace(eventTypeName))
         {
             var topicSuffix = consumeResult.Topic;
@@ -433,12 +425,11 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             }
         }
 
-        // Manual commit after successful processing (at-least-once semantics)
         if (!_options.EnableAutoCommit)
         {
             try
             {
-                var consumer = _consumer; // Capture reference to avoid race with StopAsync
+                var consumer = _consumer;
                 consumer?.Commit(consumeResult);
             }
             catch (KafkaException ex)
@@ -451,10 +442,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             eventType.Name, consumeResult.Topic, consumeResult.Offset);
     }
 
-    /// <summary>
-    /// Publishes a failed message to a dead-letter topic for later inspection/replay.
-    /// Dead-letter topic name: {TopicPrefix}.dead-letter.{OriginalTopic}
-    /// </summary>
     private async Task PublishToDeadLetterAsync(ConsumeResult<string, byte[]> consumeResult, Exception error, CancellationToken ct)
     {
         try
@@ -469,7 +456,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
                 Headers = new Headers()
             };
 
-            // Copy original headers
             if (consumeResult.Message.Headers != null)
             {
                 foreach (var header in consumeResult.Message.Headers)
@@ -478,7 +464,6 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
                 }
             }
 
-            // Add error metadata
             deadLetterMessage.Headers.Add("Error", System.Text.Encoding.UTF8.GetBytes(error.Message));
             deadLetterMessage.Headers.Add("ErrorType", System.Text.Encoding.UTF8.GetBytes(error.GetType().Name));
             deadLetterMessage.Headers.Add("OriginalTopic", System.Text.Encoding.UTF8.GetBytes(consumeResult.Topic));
@@ -522,12 +507,12 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
         {
             _consumerTask?.Wait(TimeSpan.FromSeconds(10));
         }
-        catch { /* ignore */ }
+        catch {  }
 
-        try { _consumer?.Close(); } catch { /* ignore */ }
+        try { _consumer?.Close(); } catch {  }
         _consumer?.Dispose();
 
-        try { _producer?.Flush(TimeSpan.FromSeconds(10)); } catch { /* ignore */ }
+        try { _producer?.Flush(TimeSpan.FromSeconds(10)); } catch {  }
         _producer?.Dispose();
 
         _consumerCts?.Dispose();
@@ -546,13 +531,13 @@ public class KafkaChannelAdapter : IChannelAdapter, IDisposable, IAsyncDisposabl
             {
                 await Task.WhenAny(_consumerTask, Task.Delay(TimeSpan.FromSeconds(10)));
             }
-            catch { /* ignore */ }
+            catch {  }
         }
 
-        try { _consumer?.Close(); } catch { /* ignore */ }
+        try { _consumer?.Close(); } catch {  }
         _consumer?.Dispose();
 
-        try { _producer?.Flush(TimeSpan.FromSeconds(10)); } catch { /* ignore */ }
+        try { _producer?.Flush(TimeSpan.FromSeconds(10)); } catch {  }
         _producer?.Dispose();
 
         _consumerCts?.Dispose();

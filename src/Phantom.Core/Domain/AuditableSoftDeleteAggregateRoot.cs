@@ -1,15 +1,5 @@
 namespace Phantom.Core.Domain;
 
-/// <summary>
-/// An <see cref="AggregateRoot{TId}"/> that implements both <see cref="IAuditable"/> and
-/// <see cref="ISoftDeletable"/>. Use this base class when your aggregate needs audit fields
-/// AND soft-delete support — for example a Customer or Product aggregate that must be
-/// soft-removable while keeping track of who last modified it.
-///
-/// Without this class you would be forced to inherit from
-/// <see cref="AuditableSoftDeleteEntity{TId}"/>, which is not an aggregate root and
-/// therefore cannot raise domain events.
-/// </summary>
 public abstract class AuditableSoftDeleteAggregateRoot<TId> : AggregateRoot<TId>, IAuditable, ISoftDeletable where TId : notnull
 {
     public DateTimeOffset CreatedAt { get; protected set; }
@@ -44,11 +34,6 @@ public abstract class AuditableSoftDeleteAggregateRoot<TId> : AggregateRoot<TId>
         UpdatedBy = updatedBy;
     }
 
-    /// <summary>
-    /// Marks the aggregate as soft-deleted (ISoftDeletable implementation).
-    /// Sets DeletedBy to null — use <see cref="SoftDelete(string?)"/> overload
-    /// to record which user performed the deletion.
-    /// </summary>
     public virtual void SoftDelete()
     {
         if (IsDeleted) return;
@@ -57,9 +42,6 @@ public abstract class AuditableSoftDeleteAggregateRoot<TId> : AggregateRoot<TId>
         DeletedAt = DateTimeOffset.UtcNow;
     }
 
-    /// <summary>
-    /// Marks the aggregate as soft-deleted and records who performed the deletion.
-    /// </summary>
     public virtual void SoftDelete(string? deletedBy)
     {
         if (IsDeleted) return;

@@ -1,9 +1,5 @@
 namespace Phantom.Infrastructure.Abstractions.Outbox;
 
-/// <summary>
-/// Contract for a repository that persists and queries <see cref="OutboxMessage"/> rows.
-/// Implementations live in the data layer (e.g., <c>EfOutboxRepository</c> in Phantom.Data).
-/// </summary>
 public interface IOutboxMessageRepository
 {
     Task AddAsync(OutboxMessage message, CancellationToken ct = default);

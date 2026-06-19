@@ -77,11 +77,7 @@ public static class ServiceCollectionExtensions
         if (options.UseOutbox)
         {
             services.AddScoped<IOutboxMessageRepository, EfOutboxRepository>();
-            // IMessageSerializer must be registered by the application or Phantom.NET metapackage.
-            // If outbox is enabled and no serializer is registered, the PhantomDbContext
-            // will throw at runtime. Register JsonMessageSerializer via:
-            //   services.AddSingleton<IMessageSerializer, JsonMessageSerializer>();
-            // Or use AddPhantom() from Phantom.NET which handles this automatically.
+
         }
 
         if (options.UseIdempotency)

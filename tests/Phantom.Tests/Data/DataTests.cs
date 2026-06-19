@@ -13,7 +13,6 @@ using System.Linq.Expressions;
 
 namespace Phantom.Tests.Data;
 
-
 public class TestProduct : Entity<Guid>
 {
     public string Name { get; set; } = string.Empty;
@@ -64,7 +63,6 @@ public class TestFullEntity : AuditableSoftDeleteEntity<Guid>
     public TestFullEntity() { }
 }
 
-
 public class ExpensiveProductSpec : Specification<TestProduct>
 {
     private readonly decimal _minPrice;
@@ -87,7 +85,6 @@ public class PagedTestProductSpec : QuerySpecification<TestProduct>
 
     public override Expression<Func<TestProduct, bool>> ToExpression() => p => true;
 }
-
 
 public class TestDbContext : PhantomDbContext
 {
@@ -132,7 +129,6 @@ public class TestDbContext : PhantomDbContext
     }
 }
 
-
 public class RepositoryTests
 {
     private IServiceProvider BuildServiceProvider(bool useSoftDelete = false, bool useAuditable = false)
@@ -172,10 +168,7 @@ public class RepositoryTests
     [Fact]
     public async Task GetAllAsync_Should_Return_All_Entities()
     {
-        // GetAllAsync is no longer on the IRepository interface (it is an anti-pattern —
-        // returning the whole table without a specification encourages unbounded queries).
-        // It remains on the concrete Repository class for callers that explicitly need it
-        // (migrations, batch jobs). This test verifies that the concrete method still works.
+
         var sp = BuildServiceProvider();
         var repo = (Phantom.Data.EfCore.Repository<Guid, TestProduct>)sp.GetRequiredService<IRepository<Guid, TestProduct>>();
 
@@ -191,8 +184,7 @@ public class RepositoryTests
     [Fact]
     public void IReadRepository_Should_Not_Expose_Mutations()
     {
-        // Compile-time contract: IReadRepository does NOT have Add/Update/Remove.
-        // If this test compiles, the contract holds.
+
         var readRepoType = typeof(Phantom.Core.Services.IReadRepository<,>);
         var methods = readRepoType.GetMethods();
         Assert.DoesNotContain(methods, m => m.Name == "AddAsync");
@@ -204,7 +196,7 @@ public class RepositoryTests
     [Fact]
     public void IWriteRepository_Should_Not_Expose_Queries()
     {
-        // Compile-time contract: IWriteRepository does NOT have GetById/Find/Count.
+
         var writeRepoType = typeof(Phantom.Core.Services.IWriteRepository<,>);
         var methods = writeRepoType.GetMethods();
         Assert.DoesNotContain(methods, m => m.Name == "GetByIdAsync");
@@ -215,9 +207,7 @@ public class RepositoryTests
     [Fact]
     public void IRepository_Should_Inherit_Both_Read_And_Write()
     {
-        // IRepository composes IReadRepository and IWriteRepository. We must use constructed
-        // generic types (with concrete TId/TEntity arguments) because Type.IsAssignableFrom
-        // does not work on unbound generic type definitions.
+
         var repoType = typeof(Phantom.Core.Services.IRepository<Guid, TestProduct>);
         Assert.True(typeof(Phantom.Core.Services.IReadRepository<Guid, TestProduct>).IsAssignableFrom(repoType));
         Assert.True(typeof(Phantom.Core.Services.IWriteRepository<Guid, TestProduct>).IsAssignableFrom(repoType));
@@ -324,7 +314,6 @@ public class RepositoryTests
     }
 }
 
-
 public class UnitOfWorkTests
 {
     [Fact]
@@ -375,7 +364,6 @@ public class UnitOfWorkTests
         Assert.True(typeof(IAsyncDisposable).IsAssignableFrom(typeof(UnitOfWork)));
     }
 }
-
 
 public class TestDomainEventDispatcher : IDomainEventDispatcher
 {
@@ -492,7 +480,6 @@ public class ThrowingDomainEventDispatcher : IDomainEventDispatcher
     }
 }
 
-
 public class EfOutboxRepositoryTests
 {
     private IServiceProvider BuildServiceProvider()
@@ -604,7 +591,6 @@ public class EfOutboxRepositoryTests
         Assert.Equal("retry error", pending[0].LastError);
     }
 }
-
 
 public class SpecificationEvaluatorTests
 {

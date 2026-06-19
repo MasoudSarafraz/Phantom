@@ -11,15 +11,6 @@ using Phantom.CQRS.Queries;
 
 namespace ECommerce.Application.Handlers;
 
-// ─── Order Command Handlers ──────────────────────────────────
-
-/// <summary>
-/// Example: Creating an aggregate root with domain events.
-/// When order.Confirm() is called, it raises OrderPlacedEvent.
-/// Phantom's PhantomDbContext automatically:
-///   1. Saves the outbox message in the same transaction (atomic)
-///   2. OutboxProcessor publishes it to the messaging channel later
-/// </summary>
 public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, Guid>
 {
     private readonly IRepository<Guid, Order> _orderRepository;
@@ -50,7 +41,6 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, Gui
             order.AddLine(orderLine);
         }
 
-        // This raises OrderPlacedEvent internally — Phantom handles it via outbox
         order.Confirm();
 
         await _orderRepository.AddAsync(order, cancellationToken);
@@ -99,12 +89,6 @@ public class CancelOrderCommandHandler : ICommandHandler<CancelOrderCommand>
     }
 }
 
-// ─── Order Query Handlers ────────────────────────────────────
-
-/// <summary>
-/// Example: Query with Specification + Include (eager loading).
-/// Uses OrderWithLinesSpec to load Order + OrderLines in a single query.
-/// </summary>
 public class GetOrderByIdQueryHandler : IQueryHandler<GetOrderByIdQuery, OrderDto>
 {
     private readonly IRepository<Guid, Order> _repository;
@@ -113,10 +97,7 @@ public class GetOrderByIdQueryHandler : IQueryHandler<GetOrderByIdQuery, OrderDt
 
     public async Task<OrderDto> HandleAsync(GetOrderByIdQuery query, CancellationToken cancellationToken = default)
     {
-        // Option 1: Simple GetById (doesn't load Lines)
-        // var order = await _repository.GetByIdAsync(query.OrderId, cancellationToken);
 
-        // Option 2: Using Specification with Include — loads Lines in same query
         var spec = new OrderWithLinesSpec(query.OrderId);
         var order = (await _repository.FindAsync(spec, cancellationToken)).FirstOrDefault()
             ?? throw new NotFoundException(nameof(Order), query.OrderId);

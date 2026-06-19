@@ -13,8 +13,6 @@ using Phantom.Data.Specifications;
 
 namespace ECommerce.Application.Handlers;
 
-// ─── Product Command Handlers ────────────────────────────────
-
 public class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, Guid>
 {
     private readonly IRepository<Guid, Product> _repository;
@@ -36,8 +34,6 @@ public class CreateProductCommandHandler : ICommandHandler<CreateProductCommand,
     }
 }
 
-// ─── Product Query Handlers ──────────────────────────────────
-
 public class GetProductByIdQueryHandler : IQueryHandler<GetProductByIdQuery, ProductDto>
 {
     private readonly IRepository<Guid, Product> _repository;
@@ -52,10 +48,6 @@ public class GetProductByIdQueryHandler : IQueryHandler<GetProductByIdQuery, Pro
     }
 }
 
-/// <summary>
-/// Example: Using Specification with Paging, OrderBy, and AsNoTracking.
-/// Demonstrates the enriched Specification pattern in Phantom.
-/// </summary>
 public class SearchProductsQueryHandler : IQueryHandler<SearchProductsQuery, PagedResult<ProductDto>>
 {
     private readonly IRepository<Guid, Product> _repository;
@@ -64,13 +56,11 @@ public class SearchProductsQueryHandler : IQueryHandler<SearchProductsQuery, Pag
 
     public async Task<PagedResult<ProductDto>> HandleAsync(SearchProductsQuery query, CancellationToken cancellationToken = default)
     {
-        // Build specification with keyword filter + paging + ordering + AsNoTracking
+
         var spec = new PagedProductSpec(keyword: query.Keyword, page: query.Page, pageSize: query.PageSize);
 
-        // FindAsync applies the specification to the IQueryable
         var products = await _repository.FindAsync(spec, cancellationToken);
 
-        // Count total (without paging) for pagination metadata
         var totalCount = await _repository.CountAsync(cancellationToken);
 
         var items = products.Select(p =>

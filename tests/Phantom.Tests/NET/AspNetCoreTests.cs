@@ -23,7 +23,6 @@ using System.Text.Json;
 
 namespace Phantom.Tests.NET;
 
-
 public class ExceptionHandlingMiddlewareTests
 {
     private TestServer CreateServer(Func<HttpContext, Task> pipelineHandler)
@@ -201,7 +200,6 @@ public class ExceptionHandlingMiddlewareTests
     }
 }
 
-
 public class PhantomProblemDetailTests
 {
     [Fact]
@@ -246,7 +244,6 @@ public class PhantomProblemDetailTests
     }
 }
 
-
 public class AspNetTestDbContext : PhantomDbContext
 {
     public AspNetTestDbContext(DbContextOptions options, IDomainEventDispatcher? dispatcher = null)
@@ -272,7 +269,6 @@ public class DatabaseHealthCheckTests
         Assert.Equal(HealthStatus.Healthy, result.Status);
     }
 }
-
 
 public class BrokerHealthCheckTests
 {
@@ -332,7 +328,6 @@ public class BrokerHealthCheckTests
     }
 }
 
-
 internal class TestHealthChannelAdapter : IChannelAdapter
 {
     public string ChannelName { get; }
@@ -350,21 +345,15 @@ internal class TestHealthChannelAdapter : IChannelAdapter
     public Task StopAsync(CancellationToken ct = default) { _isStarted = false; return Task.CompletedTask; }
 }
 
-
-// Lightweight integration event used by PhantomOptions validation tests.
 internal class ValidationTestEvent : Phantom.Core.Events.IntegrationEvent
 {
     public string Payload { get; }
     public ValidationTestEvent(string payload) { Payload = payload; }
 }
 
-
 public class PhantomOptionsValidationTests
 {
-    /// <summary>
-    /// Calling RouteEvent for a channel that was never registered via AddChannel must fail at startup,
-    /// not at publish time when the message would silently disappear.
-    /// </summary>
+
     [Fact]
     public void RouteEvent_To_Unregistered_Channel_Should_Fail_At_Startup()
     {
@@ -376,17 +365,14 @@ public class PhantomOptionsValidationTests
             {
                 options
                     .UseInMemoryDatabase()
-                    .AddChannel("orders", c => c.UseInMemory())          // some other channel
-                    .RouteEvent<ValidationTestEvent>("does-not-exist");  // but route to an unregistered one
+                    .AddChannel("orders", c => c.UseInMemory())
+                    .RouteEvent<ValidationTestEvent>("does-not-exist");
             }));
 
         Assert.Contains("does-not-exist", ex.Message);
         Assert.Contains("AddChannel", ex.Message);
     }
 
-    /// <summary>
-    /// Calling RouteEvent at all when no channel is registered must fail with a clear message.
-    /// </summary>
     [Fact]
     public void RouteEvent_With_No_Channels_At_All_Should_Fail_At_Startup()
     {
@@ -404,10 +390,6 @@ public class PhantomOptionsValidationTests
         Assert.Contains("no channel has been registered", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// A correctly configured pipeline (channel registered, event routed to a registered channel)
-    /// must pass validation without throwing.
-    /// </summary>
     [Fact]
     public void Valid_Configuration_Should_Pass_Validation()
     {

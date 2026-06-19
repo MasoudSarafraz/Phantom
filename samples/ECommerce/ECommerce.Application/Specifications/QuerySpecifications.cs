@@ -5,15 +5,6 @@ using Phantom.Data.Specifications;
 
 namespace ECommerce.Application.Specifications;
 
-/// <summary>
-/// Infrastructure-layer query specification for paginated product search.
-/// Lives in Infrastructure (not Domain) because it uses <see cref="QuerySpecification{T}"/>
-/// which depends on EF Core concepts (Includes, AsNoTracking, paging, ordering).
-///
-/// Usage in handler:
-///   var spec = new PagedProductSpec(keyword: "laptop", page: 1, pageSize: 20);
-///   var products = await _repository.FindAsync(spec, ct);
-/// </summary>
 public class PagedProductSpec : QuerySpecification<Product>
 {
     public PagedProductSpec(string? keyword = null, int page = 1, int pageSize = 20)
@@ -42,10 +33,6 @@ public class PagedProductSpec : QuerySpecification<Product>
     }
 }
 
-/// <summary>
-/// Infrastructure-layer query specification for retrieving an Order with its OrderLines
-/// eagerly loaded in a single SQL query.
-/// </summary>
 public class OrderWithLinesSpec : QuerySpecification<Order>
 {
     private readonly Guid? _orderId;

@@ -12,13 +12,6 @@ using Phantom.CQRS.Queries;
 
 namespace ECommerce.Application.Handlers;
 
-// ─── Customer Command Handlers ───────────────────────────────
-
-/// <summary>
-/// Example: Command handler using Result monad for graceful error handling.
-/// Instead of throwing exceptions for expected business scenarios,
-/// returns Result.Success() or Result.Failure() — letting the caller decide.
-/// </summary>
 public class CreateCustomerCommandHandler : ICommandHandler<CreateCustomerCommand, Result<Guid>>
 {
     private readonly IRepository<Guid, Customer> _repository;
@@ -32,7 +25,7 @@ public class CreateCustomerCommandHandler : ICommandHandler<CreateCustomerComman
 
     public async Task<Result<Guid>> HandleAsync(CreateCustomerCommand command, CancellationToken cancellationToken = default)
     {
-        // Validate email using ValueObject — throws on invalid format
+
         EmailAddress email;
         try
         {
@@ -40,7 +33,7 @@ public class CreateCustomerCommandHandler : ICommandHandler<CreateCustomerComman
         }
         catch (ArgumentException ex)
         {
-            // Return failure instead of throwing — cleaner for expected validation errors
+
             return Result.Failure<Guid>(ex.Message);
         }
 
@@ -51,8 +44,6 @@ public class CreateCustomerCommandHandler : ICommandHandler<CreateCustomerComman
         return Result.Success(customer.Id);
     }
 }
-
-// ─── Customer Query Handlers ─────────────────────────────────
 
 public class GetCustomerByIdQueryHandler : IQueryHandler<GetCustomerByIdQuery, CustomerDto>
 {
@@ -68,9 +59,6 @@ public class GetCustomerByIdQueryHandler : IQueryHandler<GetCustomerByIdQuery, C
     }
 }
 
-/// <summary>
-/// Example: List orders for a customer using Specification + Paging.
-/// </summary>
 public class GetCustomerOrdersQueryHandler : IQueryHandler<GetCustomerOrdersQuery, PagedResult<OrderDto>>
 {
     private readonly IRepository<Guid, Order> _repository;
@@ -79,11 +67,10 @@ public class GetCustomerOrdersQueryHandler : IQueryHandler<GetCustomerOrdersQuer
 
     public async Task<PagedResult<OrderDto>> HandleAsync(GetCustomerOrdersQuery query, CancellationToken cancellationToken = default)
     {
-        // Use OrderWithLinesSpec with customer filter — eager-loads OrderLines
+
         var spec = new OrderWithLinesSpec();
         var allOrders = await _repository.FindAsync(spec, cancellationToken);
 
-        // Filter by customer in memory (simple example; for production, create a dedicated spec)
         var customerOrders = allOrders
             .Where(o => o.CustomerId == query.CustomerId)
             .Skip((query.Page - 1) * query.PageSize)

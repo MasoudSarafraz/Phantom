@@ -7,9 +7,6 @@ using System.Linq.Expressions;
 
 namespace Phantom.Tests.Core;
 
-
-// ─── Test fixtures for the unified Result / Exception API ─────────────────────
-
 public class ResultThrowIfFailureTests
 {
     [Fact]
@@ -90,15 +87,13 @@ public class TryCheckRuleTests
     [Fact]
     public void TryCheckRule_Then_ThrowIfFailure_Should_Propagate_As_BusinessRuleException()
     {
-        // The bridge between Result-first and Exception-first style:
-        //   aggregate.TryCheckRule(...).ThrowIfFailure();
+
         var ar = new TestRuleAggregate(Guid.NewGuid());
         var result = ar.TryValidate(new AlwaysBrokenRule());
         var ex = Assert.Throws<BusinessRuleException>(() => result.ThrowIfFailure());
         Assert.Equal("rule broken", ex.Message);
     }
 }
-
 
 public class ResultTests
 {
@@ -146,7 +141,6 @@ public class ResultTests
         Assert.Equal("err: bad", output);
     }
 }
-
 
 public class ResultTTests
 {
@@ -251,7 +245,6 @@ public class ResultTTests
         Assert.True(result.IsFailure);
     }
 }
-
 
 public class ActiveUserSpec : Specification<string>
 {
@@ -369,7 +362,6 @@ public class SpecificationTests
     }
 }
 
-
 public class ExceptionTests
 {
     [Fact]
@@ -415,7 +407,6 @@ public class ExceptionTests
         Assert.Equal("domain error", ex.Message);
     }
 }
-
 
 public class TestIntegrationEvent : IntegrationEvent
 {

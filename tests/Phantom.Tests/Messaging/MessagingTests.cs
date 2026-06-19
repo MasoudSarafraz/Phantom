@@ -15,7 +15,6 @@ using Polly.Retry;
 
 namespace Phantom.Tests.Messaging;
 
-
 public class TestOrderCreatedEvent : IntegrationEvent
 {
     public string OrderId { get; }
@@ -27,7 +26,6 @@ public class TestPaymentProcessedEvent : IntegrationEvent
     public decimal Amount { get; }
     public TestPaymentProcessedEvent(decimal amount) { Amount = amount; }
 }
-
 
 public class TestOrderCreatedHandler : IIntegrationEventHandler<TestOrderCreatedEvent>
 {
@@ -52,7 +50,6 @@ public class TestPaymentHandler : IIntegrationEventHandler<TestPaymentProcessedE
         return Task.CompletedTask;
     }
 }
-
 
 public class ChannelRegistryTests
 {
@@ -178,7 +175,6 @@ public class ChannelRegistryTests
     }
 }
 
-
 public class InMemoryChannelTests
 {
     [Fact]
@@ -232,7 +228,6 @@ public class InMemoryChannelTests
     }
 }
 
-
 public class EventPublisherTests
 {
     [Fact]
@@ -281,7 +276,6 @@ public class EventPublisherTests
     }
 }
 
-
 public class PhantomMessagingOptionsTests
 {
     [Fact]
@@ -299,7 +293,7 @@ public class PhantomMessagingOptionsTests
     {
         ChannelName name = ChannelName.From("orders");
         Assert.Equal("orders", name.Value);
-        Assert.Equal("orders", name); // implicit conversion to string
+        Assert.Equal("orders", name);
     }
 
     [Fact]
@@ -327,8 +321,7 @@ public class PhantomMessagingOptionsTests
     [Fact]
     public void ChannelName_Implicit_From_String_Should_Work()
     {
-        // The implicit conversion allows declaring constants as:
-        //   public static readonly ChannelName Orders = "orders";
+
         ChannelName name = "orders";
         Assert.Equal("orders", name.Value);
     }
@@ -376,7 +369,6 @@ public class PhantomMessagingOptionsTests
     }
 }
 
-
 public class OutboxMessageTests
 {
     [Fact]
@@ -390,7 +382,6 @@ public class OutboxMessageTests
         Assert.Equal(0, msg.RetryCount);
     }
 }
-
 
 public class ResiliencePipelineTests
 {
@@ -410,7 +401,7 @@ public class ResiliencePipelineTests
     [Fact]
     public async Task CompositeResiliencePipeline_Should_Retry_On_Failure()
     {
-        // Retry 3 times with a tiny base delay so the test stays fast.
+
         var retry = new RetryStrategyOptions
         {
             MaxRetryAttempts = 3,
@@ -457,16 +448,13 @@ public class ResiliencePipelineTests
             });
         });
 
-        // 1 initial attempt + 2 retries = 3 total invocations.
         Assert.Equal(3, attempts);
     }
 
     [Fact]
     public async Task EventPublisher_Should_Retry_Transient_Adapter_Failure()
     {
-        // Arrange: a fake adapter that fails twice then succeeds.
-        // The publisher must invoke the resilience pipeline so that the third call
-        // finally publishes the event.
+
         var mockAdapter = new Moq.Mock<IChannelAdapter>();
         mockAdapter.SetupGet(a => a.ChannelName).Returns("orders");
         var callCount = 0;
@@ -493,26 +481,19 @@ public class ResiliencePipelineTests
 
         var publisher = new EventPublisher(registry, pipeline, new LoggerFactory().CreateLogger<EventPublisher>());
 
-        // Act
         await publisher.PublishAsync(new TestOrderCreatedEvent("ORD-RETRY"), "orders");
 
-        // Assert
         Assert.Equal(3, callCount);
     }
 }
 
-
 public class OutboxProcessorTests
 {
-    /// <summary>
-    /// The OutboxProcessor should deserialize pending outbox messages, publish them via
-    /// IEventPublisher, and call MarkAsPublishedAsync on the repository when publishing
-    /// succeeds.
-    /// </summary>
+
     [Fact]
     public async Task ProcessAsync_Should_Publish_Pending_Messages_And_Mark_As_Published()
     {
-        // Arrange — fake repository with one pending message
+
         var evt = new TestOrderCreatedEvent("ORD-OUTBOX-1");
         var serializer = new JsonMessageSerializer();
         var payload = System.Text.Encoding.UTF8.GetString(serializer.Serialize(evt));
@@ -530,10 +511,6 @@ public class OutboxProcessorTests
         repo.Setup(r => r.GetPendingAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<OutboxMessage> { message });
 
-        // Capture the published event so we can assert on its contents below.
-        // The OutboxProcessor calls PublishAsync<IIntegrationEvent> because the deserialized
-        // event is typed as IIntegrationEvent at the call site, so the Setup must match that
-        // generic instantiation.
         IIntegrationEvent? publishedEvent = null;
         var publisher = new Moq.Mock<IEventPublisher>();
         publisher.Setup(p => p.PublishAsync(It.IsAny<IIntegrationEvent>(), It.IsAny<CancellationToken>()))
@@ -554,10 +531,8 @@ public class OutboxProcessorTests
             batchSize: 10,
             pollingInterval: TimeSpan.FromMilliseconds(100));
 
-        // Act — invoke ProcessAsync once (does NOT start the background loop)
         await processor.ProcessAsync(CancellationToken.None);
 
-        // Assert
         Assert.NotNull(publishedEvent);
         Assert.Equal("ORD-OUTBOX-1", ((TestOrderCreatedEvent)publishedEvent!).OrderId);
         publisher.Verify(p => p.PublishAsync(It.IsAny<IIntegrationEvent>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -566,11 +541,6 @@ public class OutboxProcessorTests
             "IncrementRetryCountAsync must not be called when publishing succeeded.");
     }
 
-    /// <summary>
-    /// When publishing fails (even after the resilience pipeline exhausts its retries),
-    /// the OutboxProcessor should call IncrementRetryCountAsync so the message can be
-    /// retried in a later sweep. The message must NOT be marked as published.
-    /// </summary>
     [Fact]
     public async Task ProcessAsync_Should_Increment_Retry_Count_When_Publish_Fails()
     {
@@ -609,20 +579,14 @@ public class OutboxProcessorTests
             batchSize: 10,
             pollingInterval: TimeSpan.FromMilliseconds(100));
 
-        // Act — must NOT throw; OutboxProcessor swallows per-message exceptions
         await processor.ProcessAsync(CancellationToken.None);
 
-        // Assert
         repo.Verify(r => r.MarkAsPublishedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never,
             "MarkAsPublishedAsync must not be called when publishing failed.");
         repo.Verify(r => r.IncrementRetryCountAsync(message.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once,
             "IncrementRetryCountAsync must be called so the message is retried later.");
     }
 
-    /// <summary>
-    /// When the repository returns an empty list, the processor should not attempt any
-    /// publish or update calls. This is the common idle case.
-    /// </summary>
     [Fact]
     public async Task ProcessAsync_With_No_Pending_Messages_Should_Do_Nothing()
     {
@@ -651,7 +615,6 @@ public class OutboxProcessorTests
         repo.Verify(r => r.IncrementRetryCountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
-
 
 public class MessageSerializerTests
 {
@@ -697,9 +660,7 @@ public class MessageSerializerTests
     [Fact]
     public void MessagePackMessageSerializer_Should_Produce_Smaller_Payload_Than_Json()
     {
-        // For most realistic event shapes, MessagePack produces a more compact binary
-        // representation than JSON. We assert this on a representative event so that a
-        // regression in MessagePack configuration is caught.
+
         var jsonSerializer = new JsonMessageSerializer();
         var mpSerializer = new Phantom.Messaging.MessagePack.MessagePackMessageSerializer();
         var evt = new TestOrderCreatedEvent("ORD-CMP");
@@ -732,7 +693,6 @@ public class MessageSerializerTests
     }
 }
 
-
 internal class MockChannelAdapter : IChannelAdapter
 {
     public string ChannelName { get; }
@@ -750,13 +710,12 @@ internal class MockChannelAdapter : IChannelAdapter
     public Task StopAsync(CancellationToken ct = default) { _isStarted = false; return Task.CompletedTask; }
 }
 
-
 public class IdempotentIntegrationEventHandlerDecoratorTests
 {
     [Fact]
     public async Task Should_Call_Inner_Handler_When_Event_Not_Processed()
     {
-        // Arrange
+
         var trackerMock = new Mock<IIdempotencyTracker>();
         trackerMock.Setup(t => t.IsProcessedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -772,10 +731,8 @@ public class IdempotentIntegrationEventHandlerDecoratorTests
 
         var evt = new TestOrderCreatedEvent("ORD-1");
 
-        // Act
         await decorator.HandleAsync(evt);
 
-        // Assert
         innerHandlerMock.Verify(h => h.HandleAsync(evt, It.IsAny<CancellationToken>()), Times.Once);
         trackerMock.Verify(t => t.MarkAsProcessedAsync(evt.EventId, evt.EventName, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -783,7 +740,7 @@ public class IdempotentIntegrationEventHandlerDecoratorTests
     [Fact]
     public async Task Should_Skip_Handler_When_Event_Already_Processed()
     {
-        // Arrange
+
         var trackerMock = new Mock<IIdempotencyTracker>();
         trackerMock.Setup(t => t.IsProcessedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -797,10 +754,8 @@ public class IdempotentIntegrationEventHandlerDecoratorTests
 
         var evt = new TestOrderCreatedEvent("ORD-2");
 
-        // Act
         await decorator.HandleAsync(evt);
 
-        // Assert
         innerHandlerMock.Verify(h => h.HandleAsync(It.IsAny<TestOrderCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
         trackerMock.Verify(t => t.MarkAsProcessedAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -821,7 +776,7 @@ public class IdempotentIntegrationEventHandlerDecoratorTests
     [Fact]
     public async Task Should_Not_Mark_As_Processed_When_Inner_Handler_Throws()
     {
-        // Arrange
+
         var trackerMock = new Mock<IIdempotencyTracker>();
         trackerMock.Setup(t => t.IsProcessedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -837,12 +792,10 @@ public class IdempotentIntegrationEventHandlerDecoratorTests
 
         var evt = new TestOrderCreatedEvent("ORD-3");
 
-        // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => decorator.HandleAsync(evt));
         trackerMock.Verify(t => t.MarkAsProcessedAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
-
 
 public class OutboxDefaultEnabledTests
 {

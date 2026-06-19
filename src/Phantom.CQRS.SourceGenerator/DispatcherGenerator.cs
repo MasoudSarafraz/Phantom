@@ -7,10 +7,6 @@ using System.Text;
 
 namespace Phantom.CQRS.SourceGenerator;
 
-/// <summary>
-/// Incremental Source Generator that produces a compile-time, reflection-free dispatcher
-/// for all ICommand, ICommand&lt;TResult&gt;, and IQuery&lt;TResult&gt; types found in the compilation.
-/// </summary>
 [Generator]
 public class DispatcherGenerator : IIncrementalGenerator
 {
@@ -20,7 +16,7 @@ public class DispatcherGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Find all types that could be commands or queries
+
         var typeInfos = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => IsCandidateType(node),
@@ -48,7 +44,6 @@ public class DispatcherGenerator : IIncrementalGenerator
         if (symbol is null || symbol.IsAbstract)
             return null;
 
-        // Skip open generic types (e.g., MyGenericClass<T>)
         if (symbol.IsGenericType && symbol.TypeArguments.Any(t => t.TypeKind == TypeKind.TypeParameter))
             return null;
 
@@ -122,16 +117,12 @@ public class DispatcherGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
         sb.AppendLine();
 
-        // Generate SendAsync for ICommand (no result)
         GenerateSendAsyncCommand(sb, types);
 
-        // Generate SendAsync for ICommand<TResult>
         GenerateSendAsyncCommandWithResult(sb, types);
 
-        // Generate QueryAsync for IQuery<TResult>
         GenerateQueryAsync(sb, types);
 
-        // Generate individual handler methods
         foreach (var type in types)
         {
             switch (type.Kind)
@@ -331,9 +322,9 @@ public class DispatcherGenerator : IIncrementalGenerator
 
     private static string SanitizeName(string fullyQualifiedName)
     {
-        // Convert global::Namespace.TypeName to Namespace_TypeName
+
         var name = fullyQualifiedName.Replace("global::", "").Replace(".", "_").Replace("<", "_").Replace(">", "_").Replace(",", "_");
-        // Remove duplicate underscores
+
         while (name.Contains("__"))
             name = name.Replace("__", "_");
         return name.TrimEnd('_');

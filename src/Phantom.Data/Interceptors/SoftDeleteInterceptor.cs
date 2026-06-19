@@ -45,8 +45,6 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
 
             var entity = (ISoftDeletable)entry.Entity;
 
-            // Use the structured SoftDelete() method instead of setting properties directly
-            // This ensures any domain logic in the SoftDelete() override is respected.
             if (entity is AuditableSoftDeleteEntity<Guid> auditableSoftDelete)
             {
                 auditableSoftDelete.SoftDelete(currentUser);
@@ -55,7 +53,6 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             {
                 entity.SoftDelete();
 
-                // If the entity has a DeletedBy property (auditable), set it via EF change tracker
                 var deletedByProperty = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "DeletedBy");
                 if (deletedByProperty != null)
                 {

@@ -32,9 +32,6 @@ public static class ServiceCollectionExtensions
         var options = new PhantomOptions();
         configure?.Invoke(options);
 
-        // Fail-fast: validate the combination of configured options before any service is
-        // registered. This turns "broker down at publish time" / "no channel for event" /
-        // "outbox without DB" errors into clear boot-time exceptions with actionable messages.
         options.Validate();
 
         if (string.IsNullOrWhiteSpace(options.DataOptions.ConnectionString) &&

@@ -78,13 +78,12 @@ public class InMemoryChannelAdapter : IChannelAdapter, IDisposable, IAsyncDispos
 
     public void Dispose()
     {
-        // No unmanaged resources to dispose for InMemory adapter.
-        // Implemented for interface uniformity with RabbitMQ and Kafka adapters.
+
     }
 
     public ValueTask DisposeAsync()
     {
-        // No unmanaged resources to dispose for InMemory adapter.
+
         return ValueTask.CompletedTask;
     }
 }

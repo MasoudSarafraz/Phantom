@@ -6,14 +6,6 @@ using Phantom.Data.Specifications;
 
 namespace Phantom.Data.EfCore;
 
-/// <summary>
-/// EF Core implementation of <see cref="IRepository{TId, TEntity}"/>.
-///
-/// Implements both <see cref="IReadRepository{TId, TEntity}"/> and <see cref="IWriteRepository{TId, TEntity}"/>.
-/// The legacy <c>GetAllAsync</c> / <c>GetAllAsNoTrackingAsync</c> methods remain on the concrete
-/// class for callers that explicitly want them, but they are NOT on the public interfaces —
-/// consumers should normally use <see cref="FindAsync"/> with a specification.
-/// </summary>
 public class Repository<TId, TEntity> : IRepository<TId, TEntity>
     where TEntity : Entity<TId>
     where TId : notnull
@@ -63,11 +55,6 @@ public class Repository<TId, TEntity> : IRepository<TId, TEntity>
         _dbContext.Set<TEntity>().Remove(entity);
         return Task.CompletedTask;
     }
-
-    // ─── Legacy "load everything" helpers ───────────────────────────────────
-    // These are intentionally NOT on the IRepository interface. They remain on the
-    // concrete class so that callers who really need them (migrations, batch jobs)
-    // can opt in, but the type system no longer encourages their use.
 
     public async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
         => await _dbContext.Set<TEntity>().ToListAsync(cancellationToken);

@@ -11,7 +11,6 @@ public class EfSpecificationEvaluator : ISpecificationEvaluator
 
         var result = query.Where(specification.ToExpression());
 
-        // Apply query-specific features only if the specification implements IQuerySpecification
         if (specification is IQuerySpecification<T> querySpec)
         {
             foreach (var include in querySpec.Includes)

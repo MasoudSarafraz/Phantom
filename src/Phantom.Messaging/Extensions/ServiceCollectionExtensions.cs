@@ -16,7 +16,7 @@ using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
 using System.Reflection;
-// Disambiguate Phantom's own RetryPolicy / CircuitBreakerPolicy from Polly's same-named types.
+
 using RetryPolicy        = Phantom.Messaging.Resilience.RetryPolicy;
 using CircuitBreakerPolicy = Phantom.Messaging.Resilience.CircuitBreakerPolicy;
 using PollyRetryStrategyOptions        = Polly.Retry.RetryStrategyOptions;
@@ -49,11 +49,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IChannelRegistry, ChannelRegistry>();
 
-        // Build a composite resilience pipeline that combines Retry (if configured) and
-        // Circuit Breaker (if configured). This pipeline is the one actually used by
-        // EventPublisher and OutboxProcessor when publishing to a broker. The legacy
-        // RetryPolicy / CircuitBreakerPolicy classes remain registered for backward
-        // compatibility, but the pipeline is the source of truth for resilience behavior.
         services.TryAddSingleton<IResiliencePipeline>(sp =>
         {
             PollyRetryStrategyOptions? retryOptions = null;
@@ -128,8 +123,6 @@ public static class ServiceCollectionExtensions
                 var builder = new ChannelBuilder(name);
                 builderAction(builder);
 
-                // Validate adapter options at startup so invalid configuration fails fast
-                // rather than at first publish/consume attempt.
                 if (builder.AdapterType == typeof(RabbitMqChannelAdapter))
                     ((RabbitMqOptions)builder.AdapterOptions!).Validate();
                 else if (builder.AdapterType == typeof(KafkaChannelAdapter))
@@ -156,7 +149,6 @@ public static class ServiceCollectionExtensions
             return registry;
         });
 
-        // Register integration event handlers — optionally wrapped with idempotency decorator
         foreach (var assembly in assemblies)
         {
             var handlerTypes = assembly.GetTypes()
