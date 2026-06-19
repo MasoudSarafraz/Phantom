@@ -109,7 +109,7 @@ public class TestLoggingPipeline : IPipelineBehavior<CreateOrderCommand>
     }
 }
 
-public class PipelineBehaviorTests
+public class LoggingPipelineIntegrationTests
 {
     [Fact]
     public async Task LoggingPipeline_Should_Execute()
