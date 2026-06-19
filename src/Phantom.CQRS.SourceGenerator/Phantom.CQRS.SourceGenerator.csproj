@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PackageId>Phantom.CQRS.SourceGenerator</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Masoud Sarafraz</Authors>
+    <Company>Phantom Framework</Company>
+    <Description>Compile-time source generator for Phantom.CQRS — produces a reflection-free dispatcher for all ICommand and IQuery types. Install alongside Phantom.CQRS for zero-overhead dispatching.</Description>
+    <PackageTags>ddd;clean-architecture;cqrs;source-generator;roslyn;analyzer;compile-time;reflection-free</PackageTags>
+    <PackageProjectUrl>https://github.com/MasoudSarafraz/Phantom</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MasoudSarafraz/Phantom.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <DevelopmentDependency>true</DevelopmentDependency>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Include the generator DLL as an analyzer so it runs at compile-time in consuming projects -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

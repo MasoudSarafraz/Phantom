@@ -1,0 +1,101 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Phantom.Core.Events;
+using Phantom.Core.Services;
+using Phantom.Data.EfCore;
+using Phantom.Data.Idempotency;
+using Phantom.Data.Interceptors;
+using Phantom.Data.Outbox;
+using Phantom.Data.Specifications;
+using Phantom.Infrastructure.Abstractions.Idempotency;
+using Phantom.Infrastructure.Abstractions.Outbox;
+
+namespace Phantom.Data.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddPhantomData(this IServiceCollection services, Action<PhantomDataOptions> configure)
+    {
+        var options = new PhantomDataOptions();
+        configure(options);
+        options.Validate();
+
+        services.AddSingleton<ISpecificationEvaluator, EfSpecificationEvaluator>();
+
+        services.AddDbContext<PhantomDbContext>((sp, dbOptions) =>
+        {
+            var interceptors = new List<Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor>();
+
+            if (options.UseSoftDelete)
+            {
+                var currentUserService = sp.GetService<ICurrentUserService>();
+                interceptors.Add(new SoftDeleteInterceptor(currentUserService));
+            }
+
+            if (options.UseAuditable)
+            {
+                interceptors.Add(new AuditableInterceptor(sp.GetService<ICurrentUserService>()));
+            }
+
+            if (options.ConfigureDbContext != null)
+            {
+                options.ConfigureDbContext(dbOptions);
+            }
+            else
+            {
+                switch (options.Provider)
+                {
+                    case DatabaseProvider.PostgreSQL:
+                        dbOptions.UseNpgsql(options.ConnectionString, npgsqlOptions =>
+                        {
+                            if (!string.IsNullOrEmpty(options.MigrationsAssembly))
+                                npgsqlOptions.MigrationsAssembly(options.MigrationsAssembly);
+                        });
+                        break;
+                    case DatabaseProvider.SqlServer:
+                        dbOptions.UseSqlServer(options.ConnectionString, sqlOptions =>
+                        {
+                            if (!string.IsNullOrEmpty(options.MigrationsAssembly))
+                                sqlOptions.MigrationsAssembly(options.MigrationsAssembly);
+                        });
+                        break;
+                    case DatabaseProvider.InMemory:
+                        dbOptions.UseInMemoryDatabase("PhantomDb");
+                        break;
+                }
+            }
+
+            if (interceptors.Any())
+                dbOptions.AddInterceptors(interceptors);
+        });
+
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
+
+        if (options.UseOutbox)
+        {
+            services.AddScoped<IOutboxMessageRepository, EfOutboxRepository>();
+            // IMessageSerializer must be registered by the application or Phantom.NET metapackage.
+            // If outbox is enabled and no serializer is registered, the PhantomDbContext
+            // will throw at runtime. Register JsonMessageSerializer via:
+            //   services.AddSingleton<IMessageSerializer, JsonMessageSerializer>();
+            // Or use AddPhantom() from Phantom.NET which handles this automatically.
+        }
+
+        if (options.UseIdempotency)
+        {
+            services.AddScoped<IIdempotencyTracker, EfIdempotencyTracker>();
+        }
+
+        services.TryAddScoped<ICurrentUserService, DefaultCurrentUserService>();
+
+        return services;
+    }
+}
+
+internal class DefaultCurrentUserService : ICurrentUserService
+{
+    public string? GetCurrentUserId() => null;
+}

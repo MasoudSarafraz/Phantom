@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageId>Phantom.NET</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Masoud Sarafraz</Authors>
+    <Company>Phantom Framework</Company>
+    <Description>Phantom — A DDD/Clean Architecture framework for .NET 8. All-in-one metapackage: CQRS with source-generated dispatching, EF Core repositories with enriched specifications, RabbitMQ/InMemory messaging with outbox and idempotency, health checks, and RFC 7807 problem details. Install this package to get everything.</Description>
+    <PackageTags>ddd;clean-architecture;framework;cqrs;ef-core;messaging;outbox;idempotency;specification;source-generator;rabbitmq;problem-details;health-checks</PackageTags>
+    <PackageProjectUrl>https://github.com/MasoudSarafraz/Phantom</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MasoudSarafraz/Phantom.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.9.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Phantom.Core\Phantom.Core.csproj" />
+    <ProjectReference Include="..\Phantom.CQRS\Phantom.CQRS.csproj" />
+    <ProjectReference Include="..\Phantom.Messaging\Phantom.Messaging.csproj" />
+    <ProjectReference Include="..\Phantom.Data\Phantom.Data.csproj" />
+  </ItemGroup>
+
+</Project>

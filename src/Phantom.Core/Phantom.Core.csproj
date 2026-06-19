@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Phantom.Core</PackageId>
+    <Version>2.0.0</Version>
+    <Authors>Masoud Sarafraz</Authors>
+    <Company>Phantom Framework</Company>
+    <Description>Core domain primitives for DDD/Clean Architecture — Entity, AggregateRoot, ValueObject, Domain Events, Specifications, Result monad. Zero external dependencies. Infrastructure concerns (Outbox, Idempotency) live in Phantom.Infrastructure.Abstractions.</Description>
+    <PackageTags>ddd;clean-architecture;domain-driven-design;entity;aggregate-root;value-object;specification;result-monad</PackageTags>
+    <PackageProjectUrl>https://github.com/MasoudSarafraz/Phantom</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MasoudSarafraz/Phantom.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <!-- Expose internal infrastructure-only types (e.g. IAggregateRootPersistence) to Phantom.Data
+       so that PhantomDbContext can clear domain events after SaveChanges without making
+       ClearDomainEvents part of the public IAggregateRoot contract. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Phantom.Data" />
+    <InternalsVisibleTo Include="Phantom.Tests" />
+  </ItemGroup>
+
+</Project>

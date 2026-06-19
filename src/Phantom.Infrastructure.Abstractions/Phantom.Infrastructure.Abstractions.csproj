@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Phantom.Infrastructure.Abstractions</PackageId>
+    <Version>2.0.0</Version>
+    <Authors>Masoud Sarafraz</Authors>
+    <Company>Phantom Framework</Company>
+    <Description>Infrastructure abstractions for Phantom — Outbox and Idempotency contracts that
+      live outside the Domain layer so that Phantom.Core stays free of runtime/infrastructure concerns.
+      Zero external dependencies.</Description>
+    <PackageTags>ddd;clean-architecture;infrastructure;outbox;idempotency;abstractions</PackageTags>
+    <PackageProjectUrl>https://github.com/MasoudSarafraz/Phantom</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MasoudSarafraz/Phantom.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+</Project>
