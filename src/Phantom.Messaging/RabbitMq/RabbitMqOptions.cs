@@ -28,7 +28,25 @@ public class RabbitMqOptions
 
     public TimeSpan RequestedHeartbeat { get; set; } = TimeSpan.FromSeconds(60);
 
+    public TimeSpan RequestedConnectionTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan SocketReadTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan SocketWriteTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan ContinuationTimeout { get; set; } = TimeSpan.FromSeconds(20);
+
     public string? ClientProvidedName { get; set; }
+
+    public bool AutomaticRecoveryEnabled { get; set; } = true;
+
+    public bool TopologyRecoveryEnabled { get; set; } = true;
+
+    public TimeSpan NetworkRecoveryInterval { get; set; } = TimeSpan.FromSeconds(5);
+
+    public string? DeadLetterExchange { get; set; }
+
+    public TimeSpan MessageTtl { get; set; } = TimeSpan.Zero;
 
     public void Validate()
     {
@@ -52,5 +70,20 @@ public class RabbitMqOptions
 
         if (RequestedHeartbeat <= TimeSpan.Zero)
             throw new InvalidOperationException($"RabbitMQ RequestedHeartbeat must be positive, got {RequestedHeartbeat}.");
+
+        if (RequestedConnectionTimeout <= TimeSpan.Zero)
+            throw new InvalidOperationException($"RabbitMQ RequestedConnectionTimeout must be positive, got {RequestedConnectionTimeout}.");
+
+        if (SocketReadTimeout <= TimeSpan.Zero)
+            throw new InvalidOperationException($"RabbitMQ SocketReadTimeout must be positive, got {SocketReadTimeout}.");
+
+        if (SocketWriteTimeout <= TimeSpan.Zero)
+            throw new InvalidOperationException($"RabbitMQ SocketWriteTimeout must be positive, got {SocketWriteTimeout}.");
+
+        if (ContinuationTimeout <= TimeSpan.Zero)
+            throw new InvalidOperationException($"RabbitMQ ContinuationTimeout must be positive, got {ContinuationTimeout}.");
+
+        if (NetworkRecoveryInterval <= TimeSpan.Zero)
+            throw new InvalidOperationException($"RabbitMQ NetworkRecoveryInterval must be positive, got {NetworkRecoveryInterval}.");
     }
 }
