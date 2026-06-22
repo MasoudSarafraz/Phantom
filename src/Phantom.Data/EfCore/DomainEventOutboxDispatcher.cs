@@ -47,15 +47,25 @@ public class DomainEventOutboxDispatcher
             {
                 foreach (var domainEvent in events)
                 {
-                    var payload = _messageSerializer!.Serialize(domainEvent);
-                    var outboxMessage = new OutboxMessage
+                    try
                     {
-                        EventType = domainEvent.GetType().AssemblyQualifiedName!,
-                        Payload = System.Text.Encoding.UTF8.GetString(payload),
-                        CorrelationId = domainEvent is IIntegrationEvent ie ? ie.CorrelationId : null
-                    };
-                    dbContext.Set<OutboxMessage>().Add(outboxMessage);
-                    totalEvents++;
+                        var payload = _messageSerializer!.Serialize(domainEvent);
+                        var outboxMessage = new OutboxMessage
+                        {
+                            EventType = domainEvent.GetType().AssemblyQualifiedName!,
+                            Payload = System.Text.Encoding.UTF8.GetString(payload),
+                            CorrelationId = domainEvent is IIntegrationEvent ie ? ie.CorrelationId : null,
+                            CreatedAt = DateTimeOffset.UtcNow
+                        };
+                        dbContext.Set<OutboxMessage>().Add(outboxMessage);
+                        totalEvents++;
+                    }
+                    catch (Exception serializeEx)
+                    {
+                        _logger?.LogError(serializeEx,
+                            "[Phantom] Failed to serialize domain event {EventType} for outbox. This event will not be delivered.",
+                            domainEvent.GetType().Name);
+                    }
                 }
             }
 
@@ -96,7 +106,16 @@ public class DomainEventOutboxDispatcher
 
         foreach (var (aggregate, _) in collected)
         {
-            ((IAggregateRootPersistence)aggregate).ClearDomainEvents();
+            try
+            {
+                ((IAggregateRootPersistence)aggregate).ClearDomainEvents();
+            }
+            catch (Exception clearEx)
+            {
+                _logger?.LogWarning(clearEx,
+                    "[Phantom] Failed to clear domain events for aggregate {AggregateType}. Events may be re-dispatched on next save.",
+                    aggregate.GetType().Name);
+            }
         }
     }
 }

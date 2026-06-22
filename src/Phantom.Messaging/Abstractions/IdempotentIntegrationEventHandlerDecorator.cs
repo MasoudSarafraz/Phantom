@@ -26,7 +26,8 @@ public class IdempotentIntegrationEventHandlerDecorator<TEvent> : IIntegrationEv
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        if (await _tracker.IsProcessedAsync(@event.EventId, ct))
+        var alreadyProcessed = await _tracker.IsProcessedAsync(@event.EventId, ct);
+        if (alreadyProcessed)
         {
             _logger.LogInformation(
                 "[Phantom] Idempotency: Event {EventType} with Id {EventId} already processed. Skipping.",
@@ -36,10 +37,18 @@ public class IdempotentIntegrationEventHandlerDecorator<TEvent> : IIntegrationEv
 
         await _inner.HandleAsync(@event, ct);
 
-        await _tracker.MarkAsProcessedAsync(@event.EventId, @event.EventName, ct);
-
-        _logger.LogDebug(
-            "[Phantom] Idempotency: Marked event {EventType} with Id {EventId} as processed.",
-            @event.EventName, @event.EventId);
+        try
+        {
+            await _tracker.MarkAsProcessedAsync(@event.EventId, @event.EventName, ct);
+            _logger.LogDebug(
+                "[Phantom] Idempotency: Marked event {EventType} with Id {EventId} as processed.",
+                @event.EventName, @event.EventId);
+        }
+        catch (Exception markEx)
+        {
+            _logger.LogWarning(markEx,
+                "[Phantom] Idempotency: Failed to mark event {EventType} with Id {EventId} as processed. Redelivery may cause a duplicate handler invocation.",
+                @event.EventName, @event.EventId);
+        }
     }
 }

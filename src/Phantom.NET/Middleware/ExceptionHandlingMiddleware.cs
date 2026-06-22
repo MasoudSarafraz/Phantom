@@ -28,6 +28,14 @@ public class ExceptionHandlingMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+                _logger.LogDebug("[Phantom] Request canceled by client: {Path}", context.Request.Path);
+            }
+        }
         catch (Exception ex)
         {
             await HandleExceptionAsync(context, ex);
@@ -38,6 +46,9 @@ public class ExceptionHandlingMiddleware
     {
         if (context.Response.HasStarted)
         {
+            _logger.LogError(exception,
+                "[Phantom] Response already started; cannot write problem details for exception on path {Path}.",
+                context.Request.Path);
             return;
         }
 
@@ -102,8 +113,18 @@ public class ExceptionHandlingMiddleware
                 {
                     Status = 499,
                     Title = "Request Canceled",
-                    Detail = "The request was canceled by the client.",
+                    Detail = "The operation was canceled.",
                     Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
+                }
+            ),
+            TimeoutException tex => (
+                HttpStatusCode.GatewayTimeout,
+                new PhantomProblemDetail
+                {
+                    Status = 504,
+                    Title = "Timeout",
+                    Detail = tex.Message,
+                    Type = "https://tools.ietf.org/html/rfc7231#section-6.6.5"
                 }
             ),
             _ => (
@@ -120,18 +141,31 @@ public class ExceptionHandlingMiddleware
 
         if (exception is OperationCanceledException)
         {
-            _logger.LogDebug(exception, "[Phantom] Request canceled: {Path}", context.Request.Path);
+            _logger.LogDebug(exception, "[Phantom] Operation canceled: {Path}", context.Request.Path);
+        }
+        else if ((int)statusCode >= 500)
+        {
+            _logger.LogError(exception, "[Phantom] {Title}: {Detail}", problemDetail.Title, problemDetail.Detail);
         }
         else
         {
-            _logger.LogError(exception, "[Phantom] {Title}: {Detail}", problemDetail.Title, problemDetail.Detail);
+            _logger.LogWarning(exception, "[Phantom] {Title}: {Detail}", problemDetail.Title, problemDetail.Detail);
         }
 
         problemDetail.TraceId = context.TraceIdentifier;
         problemDetail.Instance = context.Request.Path;
 
-        context.Response.StatusCode = (int)statusCode;
-        context.Response.ContentType = "application/problem+json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetail, JsonSerializerOptions));
+        try
+        {
+            context.Response.StatusCode = (int)statusCode;
+            context.Response.ContentType = "application/problem+json";
+            await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetail, JsonSerializerOptions));
+        }
+        catch (Exception writeEx)
+        {
+            _logger.LogError(writeEx,
+                "[Phantom] Failed to write problem details response for path {Path}.",
+                context.Request.Path);
+        }
     }
 }

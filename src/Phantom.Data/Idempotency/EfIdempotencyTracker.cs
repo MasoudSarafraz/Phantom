@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Phantom.Infrastructure.Abstractions.Idempotency;
 using Phantom.Data.EfCore;
+using Phantom.Infrastructure.Abstractions.Idempotency;
 
 namespace Phantom.Data.Idempotency;
 
@@ -17,9 +17,44 @@ public class EfIdempotencyTracker : IIdempotencyTracker
         => await _dbContext.Set<ProcessedEvent>().AnyAsync(e => e.EventId == eventId, ct);
 
     public async Task MarkAsProcessedAsync(Guid eventId, string eventType, CancellationToken ct = default)
-        => await _dbContext.Set<ProcessedEvent>().AddAsync(new ProcessedEvent
+    {
+        var exists = await _dbContext.Set<ProcessedEvent>().AnyAsync(e => e.EventId == eventId, ct);
+        if (exists) return;
+
+        try
         {
-            EventId = eventId,
-            EventType = eventType
-        }, ct);
+            await _dbContext.Set<ProcessedEvent>().AddAsync(new ProcessedEvent
+            {
+                EventId = eventId,
+                EventType = eventType
+            }, ct);
+            await _dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            _dbContext.ChangeTracker.Clear();
+        }
+    }
+
+    public async Task<bool> TryMarkAsProcessedAsync(Guid eventId, string eventType, CancellationToken ct = default)
+    {
+        var exists = await _dbContext.Set<ProcessedEvent>().AnyAsync(e => e.EventId == eventId, ct);
+        if (exists) return false;
+
+        try
+        {
+            await _dbContext.Set<ProcessedEvent>().AddAsync(new ProcessedEvent
+            {
+                EventId = eventId,
+                EventType = eventType
+            }, ct);
+            await _dbContext.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            _dbContext.ChangeTracker.Clear();
+            return false;
+        }
+    }
 }

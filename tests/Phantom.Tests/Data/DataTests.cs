@@ -585,10 +585,15 @@ public class EfOutboxRepositoryTests
         await repo.IncrementRetryCountAsync(msg.Id, "retry error");
         await dbContext.SaveChangesAsync();
 
+        var stored = await dbContext.Set<OutboxMessage>().FindAsync(msg.Id);
+        Assert.NotNull(stored);
+        Assert.Equal(1, stored!.RetryCount);
+        Assert.Equal("retry error", stored.LastError);
+        Assert.NotNull(stored.NextRetryAt);
+        Assert.True(stored.NextRetryAt > DateTimeOffset.UtcNow);
+
         var pending = await repo.GetPendingAsync(10);
-        Assert.Single(pending);
-        Assert.Equal(1, pending[0].RetryCount);
-        Assert.Equal("retry error", pending[0].LastError);
+        Assert.Empty(pending);
     }
 }
 

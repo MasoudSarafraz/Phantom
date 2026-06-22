@@ -21,6 +21,8 @@ public class DomainEventDispatcher : IDomainEventDispatcher
 
     public async Task DispatchAsync(IDomainEvent domainEvent, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(domainEvent);
+
         var eventType = domainEvent.GetType();
         var handlerType = typeof(IDomainEventHandler<>).MakeGenericType(eventType);
 
@@ -44,6 +46,14 @@ public class DomainEventDispatcher : IDomainEventDispatcher
                 _logger.LogInformation("[Phantom] Domain event {EventType} handled by {HandlerType}",
                     eventType.Name, handler.GetType().Name);
             }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                var inner = tie.InnerException;
+                _logger.LogError(inner,
+                    "[Phantom] Failed to handle domain event {EventType} in handler {HandlerType}.",
+                    eventType.Name, handler.GetType().Name);
+                exceptions.Add(inner);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -63,8 +73,11 @@ public class DomainEventDispatcher : IDomainEventDispatcher
 
     public async Task DispatchAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(domainEvents);
+
         foreach (var domainEvent in domainEvents)
         {
+            if (ct.IsCancellationRequested) break;
             await DispatchAsync(domainEvent, ct);
         }
     }

@@ -20,5 +20,8 @@ public class ProcessedEventConfiguration : IEntityTypeConfiguration<ProcessedEve
             .IsRequired();
 
         builder.HasIndex(e => e.EventType);
+
+        builder.HasIndex(e => e.ProcessedAt)
+            .HasDatabaseName("IX_ProcessedEvents_ProcessedAt");
     }
 }

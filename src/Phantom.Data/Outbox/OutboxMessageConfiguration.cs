@@ -26,7 +26,19 @@ public class OutboxMessageConfiguration : IEntityTypeConfiguration<OutboxMessage
         builder.Property(m => m.LastError)
             .HasMaxLength(2000);
 
+        builder.Property(m => m.CorrelationId)
+            .HasMaxLength(200);
+
         builder.HasIndex(m => m.IsPublished);
+
         builder.HasIndex(m => m.CreatedAt);
+
+        builder.HasIndex(m => m.NextRetryAt);
+
+        builder.HasIndex(m => new { m.IsPublished, m.RetryCount })
+            .HasDatabaseName("IX_OutboxMessages_Pending_Retry");
+
+        builder.HasIndex(m => m.LastAttemptAt)
+            .HasDatabaseName("IX_OutboxMessages_LastAttemptAt");
     }
 }

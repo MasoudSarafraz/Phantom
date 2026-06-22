@@ -35,16 +35,55 @@ public class PhantomDbContext : DbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        IReadOnlyList<(IAggregateRoot Aggregate, IReadOnlyList<IDomainEvent> Events)>? collected = null;
 
-        var collected = _dispatcher is null
-            ? Array.Empty<(IAggregateRoot, IReadOnlyList<IDomainEvent>)>()
-            : _dispatcher.CollectAndEnqueueOutbox(this);
+        try
+        {
+            collected = _dispatcher is null
+                ? Array.Empty<(IAggregateRoot, IReadOnlyList<IDomainEvent>)>()
+                : _dispatcher.CollectAndEnqueueOutbox(this);
+        }
+        catch (Exception collectEx)
+        {
+            _logger?.LogError(collectEx,
+                "[Phantom] Failed to collect domain events before SaveChanges. SaveChanges will proceed but domain events may be lost.");
+            collected = Array.Empty<(IAggregateRoot, IReadOnlyList<IDomainEvent>)>();
+        }
 
-        var result = await base.SaveChangesAsync(cancellationToken);
+        int result;
+        try
+        {
+            result = await base.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            foreach (var (aggregate, _) in collected!)
+            {
+                try
+                {
+                    ((IAggregateRootPersistence)aggregate).ClearDomainEvents();
+                }
+                catch (Exception clearEx)
+                {
+                    _logger?.LogWarning(clearEx,
+                        "[Phantom] Failed to clear domain events for aggregate {AggregateType} after SaveChanges failure.",
+                        aggregate.GetType().Name);
+                }
+            }
+            throw;
+        }
 
         if (_dispatcher is not null && collected.Count > 0)
         {
-            await _dispatcher.AfterSaveChangesAsync(collected, cancellationToken);
+            try
+            {
+                await _dispatcher.AfterSaveChangesAsync(collected, cancellationToken);
+            }
+            catch (Exception afterSaveEx)
+            {
+                _logger?.LogError(afterSaveEx,
+                    "[Phantom] Failed to dispatch domain events after SaveChanges. Data was persisted successfully but domain event handlers may not have run.");
+            }
         }
 
         return result;

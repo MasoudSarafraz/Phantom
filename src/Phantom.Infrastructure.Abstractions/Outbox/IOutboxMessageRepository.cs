@@ -13,4 +13,10 @@ public interface IOutboxMessageRepository
     Task MarkAsFailedAsync(Guid messageId, string error, CancellationToken ct = default);
 
     Task IncrementRetryCountAsync(Guid messageId, string error, CancellationToken ct = default);
+
+    Task<bool> TryMarkAsProcessingAsync(Guid messageId, DateTimeOffset lockedUntil, CancellationToken ct = default);
+
+    Task ClearProcessingLockAsync(Guid messageId, CancellationToken ct = default);
+
+    Task MarkAsTerminalFailureAsync(Guid messageId, string error, CancellationToken ct = default);
 }

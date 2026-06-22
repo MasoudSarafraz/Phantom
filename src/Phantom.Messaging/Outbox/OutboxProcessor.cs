@@ -16,6 +16,7 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
     private readonly ILogger<OutboxProcessor> _logger;
     private readonly TimeSpan _pollingInterval;
     private readonly int _batchSize;
+    private static readonly TimeSpan ProcessingLockDuration = TimeSpan.FromMinutes(5);
 
     public OutboxProcessor(
         IServiceProvider serviceProvider,
@@ -44,9 +45,21 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
             {
                 await ProcessAsync(stoppingToken);
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Phantom] Outbox Processor error");
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
 
             try
@@ -55,6 +68,7 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
             }
             catch (OperationCanceledException)
             {
+                break;
             }
         }
 
@@ -83,49 +97,143 @@ public class OutboxProcessor : BackgroundService, IOutboxProcessor
         IEventPublisher publisher,
         CancellationToken ct)
     {
+        var lockedUntil = DateTimeOffset.UtcNow.Add(ProcessingLockDuration);
+        bool lockAcquired;
+
+        try
+        {
+            lockAcquired = await repository.TryMarkAsProcessingAsync(message.Id, lockedUntil, ct);
+        }
+        catch (Exception lockEx)
+        {
+            _logger.LogWarning(lockEx, "[Phantom] Failed to acquire processing lock for outbox message {MessageId}", message.Id);
+            return;
+        }
+
+        if (!lockAcquired)
+        {
+            _logger.LogDebug("[Phantom] Outbox message {MessageId} is already being processed by another worker. Skipping.", message.Id);
+            return;
+        }
+
         try
         {
             var eventType = ResolveEventType(message.EventType);
             if (eventType is null)
             {
-                await repository.MarkAsFailedAsync(message.Id, $"Cannot resolve type: {message.EventType}", ct);
+                await SafeMarkTerminalFailureAsync(repository, message.Id,
+                    $"Cannot resolve type: {message.EventType}", ct);
                 return;
             }
 
-            var data = System.Text.Encoding.UTF8.GetBytes(message.Payload);
-            var @event = _serializer.Deserialize(data, eventType) as IIntegrationEvent;
+            IIntegrationEvent? @event;
+            try
+            {
+                var data = System.Text.Encoding.UTF8.GetBytes(message.Payload);
+                @event = _serializer.Deserialize(data, eventType) as IIntegrationEvent;
+            }
+            catch (Exception deserialEx)
+            {
+                _logger.LogError(deserialEx, "[Phantom] Failed to deserialize outbox message {MessageId} (type={EventType})",
+                    message.Id, message.EventType);
+                await SafeMarkTerminalFailureAsync(repository, message.Id,
+                    $"Deserialization failed: {deserialEx.Message}", ct);
+                return;
+            }
+
             if (@event is null)
             {
-                await repository.MarkAsFailedAsync(message.Id, $"Deserialization returned null for type: {message.EventType}", ct);
+                await SafeMarkTerminalFailureAsync(repository, message.Id,
+                    $"Deserialization returned null for type: {message.EventType}", ct);
                 return;
             }
-
-            await _resilience.ExecuteAsync(async token =>
-            {
-                if (message.Channel != OutboxMessage.DefaultChannel)
-                {
-                    await publisher.PublishAsync(@event, message.Channel, token);
-                }
-                else
-                {
-                    await publisher.PublishAsync(@event, token);
-                }
-            }, ct);
-
-            await repository.MarkAsPublishedAsync(message.Id, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[Phantom] Failed to publish outbox message {MessageId}", message.Id);
 
             try
             {
-                await repository.IncrementRetryCountAsync(message.Id, ex.Message, ct);
+                await _resilience.ExecuteAsync(async token =>
+                {
+                    if (message.Channel != OutboxMessage.DefaultChannel)
+                    {
+                        await publisher.PublishAsync(@event, message.Channel, token);
+                    }
+                    else
+                    {
+                        await publisher.PublishAsync(@event, token);
+                    }
+                }, ct);
             }
-            catch (Exception retryEx)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
-                _logger.LogError(retryEx, "[Phantom] Failed to increment retry count for outbox message {MessageId}", message.Id);
+                try { await repository.ClearProcessingLockAsync(message.Id, CancellationToken.None); }
+                catch (Exception clearEx) { _logger.LogWarning(clearEx, "[Phantom] Failed to clear processing lock for outbox message {MessageId} on shutdown", message.Id); }
+                throw;
             }
+            catch (Exception publishEx)
+            {
+                _logger.LogError(publishEx, "[Phantom] Failed to publish outbox message {MessageId} after retries", message.Id);
+                await SafeIncrementRetryAsync(repository, message.Id, publishEx.Message, ct);
+
+                if (message.RetryCount + 1 >= message.MaxRetryCount)
+                {
+                    _logger.LogCritical("[Phantom] Outbox message {MessageId} reached terminal failure after {RetryCount} retries. Will no longer be retried.",
+                        message.Id, message.RetryCount + 1);
+                }
+                return;
+            }
+
+            try
+            {
+                await repository.MarkAsPublishedAsync(message.Id, ct);
+                _logger.LogInformation("[Phantom] Outbox message {MessageId} published successfully", message.Id);
+            }
+            catch (Exception markEx)
+            {
+                _logger.LogCritical(markEx,
+                    "[Phantom] Outbox message {MessageId} was published to broker but could not be marked as published in database. " +
+                    "This may cause a duplicate publish on the next iteration. Manual intervention may be required.",
+                    message.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Phantom] Unexpected error processing outbox message {MessageId}", message.Id);
+            await SafeIncrementRetryAsync(repository, message.Id, ex.Message, ct);
+        }
+        finally
+        {
+            try
+            {
+                await repository.ClearProcessingLockAsync(message.Id, ct);
+            }
+            catch (Exception clearEx)
+            {
+                _logger.LogWarning(clearEx, "[Phantom] Failed to clear processing lock for outbox message {MessageId}", message.Id);
+            }
+        }
+    }
+
+    private async Task SafeIncrementRetryAsync(IOutboxMessageRepository repository, Guid messageId, string error, CancellationToken ct)
+    {
+        try
+        {
+            await repository.IncrementRetryCountAsync(messageId, error, ct);
+        }
+        catch (Exception retryEx)
+        {
+            _logger.LogError(retryEx, "[Phantom] Failed to increment retry count for outbox message {MessageId}", messageId);
+        }
+    }
+
+    private async Task SafeMarkTerminalFailureAsync(IOutboxMessageRepository repository, Guid messageId, string error, CancellationToken ct)
+    {
+        try
+        {
+            await repository.MarkAsTerminalFailureAsync(messageId, error, ct);
+            _logger.LogCritical("[Phantom] Outbox message {MessageId} marked as terminal failure: {Error}", messageId, error);
+        }
+        catch (Exception termEx)
+        {
+            _logger.LogError(termEx, "[Phantom] Failed to mark outbox message {MessageId} as terminal failure", messageId);
         }
     }
 

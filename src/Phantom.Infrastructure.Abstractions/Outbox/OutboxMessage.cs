@@ -28,4 +28,8 @@ public class OutboxMessage
     public string? CorrelationId { get; set; }
 
     public string? LastError { get; set; }
+
+    public DateTimeOffset? LastAttemptAt { get; set; }
+
+    public bool IsTerminalFailure => !IsPublished && RetryCount >= MaxRetryCount;
 }

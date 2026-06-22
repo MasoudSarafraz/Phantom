@@ -487,14 +487,27 @@ public class IdempotencyDecoratorIntegrationTests
     private sealed class InMemoryIdempotencyTracker : IIdempotencyTracker
     {
         public readonly HashSet<Guid> Processed = new();
+        private readonly object _lock = new();
 
         public Task<bool> IsProcessedAsync(Guid eventId, CancellationToken ct = default)
-            => Task.FromResult(Processed.Contains(eventId));
+        {
+            lock (_lock) { return Task.FromResult(Processed.Contains(eventId)); }
+        }
 
         public Task MarkAsProcessedAsync(Guid eventId, string eventType, CancellationToken ct = default)
         {
-            Processed.Add(eventId);
+            lock (_lock) { Processed.Add(eventId); }
             return Task.CompletedTask;
+        }
+
+        public Task<bool> TryMarkAsProcessedAsync(Guid eventId, string eventType, CancellationToken ct = default)
+        {
+            lock (_lock)
+            {
+                if (Processed.Contains(eventId)) return Task.FromResult(false);
+                Processed.Add(eventId);
+                return Task.FromResult(true);
+            }
         }
     }
 

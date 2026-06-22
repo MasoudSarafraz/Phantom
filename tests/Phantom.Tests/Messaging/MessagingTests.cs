@@ -510,6 +510,8 @@ public class OutboxProcessorTests
         var repo = new Moq.Mock<IOutboxMessageRepository>();
         repo.Setup(r => r.GetPendingAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<OutboxMessage> { message });
+        repo.Setup(r => r.TryMarkAsProcessingAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         IIntegrationEvent? publishedEvent = null;
         var publisher = new Moq.Mock<IEventPublisher>();
@@ -560,6 +562,8 @@ public class OutboxProcessorTests
         var repo = new Moq.Mock<IOutboxMessageRepository>();
         repo.Setup(r => r.GetPendingAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<OutboxMessage> { message });
+        repo.Setup(r => r.TryMarkAsProcessingAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         var publisher = new Moq.Mock<IEventPublisher>();
         publisher.Setup(p => p.PublishAsync(It.IsAny<IIntegrationEvent>(), It.IsAny<CancellationToken>()))
