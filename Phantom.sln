@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -35,6 +35,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ECommerce.Api", "samples\ECommerce\ECommerce.Api\ECommerce.Api.csproj", "{A5B6C7D8-E9FA-7890-ABCD-EF1234567894}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phantom.CQRS.SourceGenerator", "src\Phantom.CQRS.SourceGenerator\Phantom.CQRS.SourceGenerator.csproj", "{E5F6A7B8-C9D0-1234-ABCD-EF1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Phantom.Telemetry", "src\Phantom.Telemetry\Phantom.Telemetry.csproj", "{B7F9B57A-D980-480C-9D3D-E2691202776C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Phantom.Testing", "src\Phantom.Testing\Phantom.Testing.csproj", "{6CF844D2-B895-4EA0-9D66-5D4A701AD721}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -98,6 +102,14 @@ Global
 		{E5F6A7B8-C9D0-1234-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5F6A7B8-C9D0-1234-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5F6A7B8-C9D0-1234-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7F9B57A-D980-480C-9D3D-E2691202776C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7F9B57A-D980-480C-9D3D-E2691202776C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7F9B57A-D980-480C-9D3D-E2691202776C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7F9B57A-D980-480C-9D3D-E2691202776C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CF844D2-B895-4EA0-9D66-5D4A701AD721}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CF844D2-B895-4EA0-9D66-5D4A701AD721}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CF844D2-B895-4EA0-9D66-5D4A701AD721}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CF844D2-B895-4EA0-9D66-5D4A701AD721}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,8 +129,10 @@ Global
 		{A4B5C6D7-E8F9-7890-ABCD-EF1234567893} = {96EAD480-FA65-43E3-8BFE-729ACA084313}
 		{A5B6C7D8-E9FA-7890-ABCD-EF1234567894} = {96EAD480-FA65-43E3-8BFE-729ACA084313}
 		{E5F6A7B8-C9D0-1234-ABCD-EF1234567890} = {39440981-0299-4847-AA97-3C5048231B64}
+		{B7F9B57A-D980-480C-9D3D-E2691202776C} = {39440981-0299-4847-AA97-3C5048231B64}
+		{6CF844D2-B895-4EA0-9D66-5D4A701AD721} = {39440981-0299-4847-AA97-3C5048231B64}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		                SolutionGuid = {AF9A9A9A-2C1C-4314-8C47-F91F9CB6A6C4}
+		SolutionGuid = {AF9A9A9A-2C1C-4314-8C47-F91F9CB6A6C4}
 	EndGlobalSection
 EndGlobal

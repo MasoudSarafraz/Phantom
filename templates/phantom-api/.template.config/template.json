@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Masoud Sarafraz",
+  "classifications": [ "Web", "Web API", "DDD", "Clean Architecture", "Phantom" ],
+  "identity": "Phantom.Api.Template",
+  "name": "Phantom DDD/Clean Architecture API",
+  "description": "A production-ready DDD/Clean Architecture solution using Phantom framework with CQRS, Event-Driven Messaging, and Outbox pattern.",
+  "shortName": "phantom",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "MyApp",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net8.0",
+          "description": "Target .NET 8"
+        }
+      ],
+      "replaces": "net8.0",
+      "defaultValue": "net8.0"
+    },
+    "UseSwagger": {
+      "type": "parameter",
+      "description": "Include Swagger/OpenAPI.",
+      "datatype": "bool",
+      "defaultValue": "true"
+    },
+    "UseDockerCompose": {
+      "type": "parameter",
+      "description": "Include docker-compose.yml for PostgreSQL, RabbitMQ, Kafka.",
+      "datatype": "bool",
+      "defaultValue": "true"
+    },
+    "UseOpenTelemetry": {
+      "type": "parameter",
+      "description": "Include Phantom.Telemetry package.",
+      "datatype": "bool",
+      "defaultValue": "true"
+    },
+    "DatabaseProvider": {
+      "type": "parameter",
+      "description": "Default database provider.",
+      "datatype": "choice",
+      "choices": [
+        { "choice": "PostgreSQL" },
+        { "choice": "SqlServer" },
+        { "choice": "InMemory" }
+      ],
+      "defaultValue": "PostgreSQL"
+    }
+  },
+  "sources": [
+    {
+      "source": "./",
+      "target": "./",
+      "exclude": [
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        ".template.config/**/*",
+        "**/*.filelist",
+        "**/*.user",
+        "**/*.lock.json"
+      ]
+    }
+  ]
+}
